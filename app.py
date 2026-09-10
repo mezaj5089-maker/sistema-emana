@@ -1,8 +1,6 @@
 import streamlit as st
 import datetime
-import time
 import pandas as pd
-from PIL import Image
 from supabase import create_client, Client
 
 # --- CONFIGURACIÓN DE PÁGINA ---
@@ -15,16 +13,16 @@ st.set_page_config(
 # --- CONEXIÓN A SUPABASE ---
 @st.cache_resource
 def init_supabase():
-    url = st.secrets.get("SUPABASE_URL") or "https://tu-proyecto.supabase.co"
-    key = st.secrets.get("SUPABASE_KEY") or "tu-clave-anon"
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
     return create_client(url, key)
 
 try:
     supabase = init_supabase()
 except Exception as e:
-    st.error("Error al conectar con Supabase. Verifica tus credenciales en Secrets.")
+    st.error("Error conectando a Supabase. Revisa tus Secrets en Streamlit.")
 
-# --- ESTADO DE SESIÓN Y LOGIN ---
+# --- ESTADO DE SESIÓN ---
 if "autenticado" not in st.session_state:
     st.session_state["autenticado"] = False
 if "usuario" not in st.session_state:
@@ -32,43 +30,57 @@ if "usuario" not in st.session_state:
 if "rol" not in st.session_state:
     st.session_state["rol"] = None
 
-# --- RELOJ Y FECHA EN TIEMPO REAL ---
+# --- RELOJ EN TIEMPO REAL CON JAVASCRIPT (NO SE CONGELA) ---
 st.sidebar.title("💧 Distribuidora EMANA")
 st.sidebar.markdown("---")
 
-ahora = datetime.datetime.now()
-st.sidebar.markdown(
-    f"""
-    <div style="background-color:#1e293b; color:#f8fafc; padding:12px; border-radius:8px; text-align:center;">
-        <h4 style="margin:0; font-size: 14px; color: #94a3b8;">📅 {ahora.strftime('%A, %d de %B %Y')}</h4>
-        <h2 style="margin:5px 0 0 0; font-size: 24px; color: #38bdf8;">⏰ {ahora.strftime('%H:%M:%S')}</h2>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+reloj_js = """
+<div style="background-color:#1e293b; color:#f8fafc; padding:12px; border-radius:8px; text-align:center; font-family:sans-serif;">
+    <div id="fecha" style="font-size:13px; color:#94a3b8; font-weight:bold;"></div>
+    <div id="reloj" style="font-size:24px; color:#38bdf8; font-weight:bold; margin-top:4px;"></div>
+</div>
+
+<script>
+function actualizarReloj() {
+    const ahora = new Date();
+    const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const fechaTexto = ahora.toLocaleDateString('es-ES', opcionesFecha);
+    const horaTexto = ahora.toLocaleTimeString('es-ES');
+    
+    document.getElementById('fecha').innerText = fechaTexto;
+    document.getElementById('reloj').innerText = '⏰ ' + horaTexto;
+}
+setInterval(actualizarReloj, 1000);
+actualizarReloj();
+</script>
+"""
+st.sidebar.components.v1.html(reloj_js, height=100)
 st.sidebar.markdown("---")
 
-# --- CONTROL DE INICIO DE SESIÓN ---
+# --- PANTALLA DE LOGIN ---
 if not st.session_state["autenticado"]:
     st.title("🔒 Iniciar Sesión - Sistema EMANA")
     with st.form("form_login"):
-        user_input = st.text_input("Usuario")
-        pass_input = st.text_input("Contraseña", type="password")
+        user_input = st.text_input("Usuario").strip()
+        pass_input = st.text_input("Contraseña", type="password").strip()
         btn_login = st.form_submit_button("Ingresar")
         
         if btn_login:
-            res = supabase.table("usuarios").select("*").eq("username", user_input).eq("password", pass_input).execute()
-            if res.data:
-                st.session_state["autenticado"] = True
-                st.session_state["usuario"] = res.data[0]["username"]
-                st.session_state["rol"] = res.data[0]["rol"]
-                st.success(f"Bienvenido {user_input} ({res.data[0]['rol']})")
-                st.rerun()
-            else:
-                st.error("Usuario o contraseña incorrectos")
+            try:
+                res = supabase.table("usuarios").select("*").eq("username", user_input).eq("password", pass_input).execute()
+                if res.data and len(res.data) > 0:
+                    st.session_state["autenticado"] = True
+                    st.session_state["usuario"] = res.data[0]["username"]
+                    st.session_state["rol"] = res.data[0]["rol"]
+                    st.success(f"Bienvenido {user_input}")
+                    st.rerun()
+                else:
+                    st.error("Usuario o contraseña incorrectos")
+            except Exception as ex:
+                st.error(f"Error de conexión con la base de datos: {ex}")
     st.stop()
 
-# --- BARRA LATERAL (USUARIO AUTENTICADO) ---
+# --- NAVEGACIÓN Y PANEL DE CONTROL ---
 st.sidebar.write(f"👤 **Usuario:** {st.session_state['usuario']}")
 st.sidebar.write(f"🔰 **Rol:** {st.session_state['rol']}")
 
@@ -78,7 +90,6 @@ if st.sidebar.button("Cerrar Sesión"):
     st.session_state["rol"] = None
     st.rerun()
 
-# --- MENÚ DE NAVEGACIÓN ---
 opciones_menu = ["Registrar Pedido / Venta", "Consultar Mis Pedidos"]
 if st.session_state["rol"] == "ADMIN":
     opciones_menu.extend(["Dashboard & Ventas Globales", "Papelera de Reciclaje"])
@@ -88,35 +99,26 @@ opcion = st.sidebar.radio("Navegación / Módulos", opciones_menu)
 # --- MÓDULO 1: REGISTRAR PEDIDO ---
 if opcion == "Registrar Pedido / Venta":
     st.header("📝 Registrar Nuevo Pedido")
-    
     col1, col2 = st.columns(2)
     with col1:
-        cliente_nombre = st.text_input("Nombre Completo o Razón Social del Cliente *")
+        cliente_nombre = st.text_input("Nombre Completo / Razón Social *")
         cliente_doc = st.text_input("DNI / RUC")
-        local_direccion = st.text_input("Dirección / Referencia del Local *")
-        tipo_comprobante = st.selectbox("Comprobante Requerido", ["BOLETA", "FACTURA", "NOTA"])
+        local_direccion = st.text_input("Dirección del Local *")
+        tipo_comprobante = st.selectbox("Comprobante", ["BOLETA", "FACTURA", "NOTA"])
     
     with col2:
-        fecha_entrega = st.date_input("Fecha Programada de Entrega", min_value=datetime.date.today())
-        rango_entrega = st.selectbox("Rango Horario de Entrega", ["Mañana (8:00 AM - 12:00 PM)", "Tarde (2:00 PM - 6:00 PM)", "Inmediato"])
-        total = st.number_input("Monto Total del Pedido (S/.) *", min_value=0.0, step=0.5)
+        fecha_entrega = st.date_input("Fecha de Entrega", min_value=datetime.date.today())
+        rango_entrega = st.selectbox("Rango Horario", ["Mañana (8:00 AM - 12:00 PM)", "Tarde (2:00 PM - 6:00 PM)", "Inmediato"])
+        total = st.number_input("Monto Total (S/.) *", min_value=0.0, step=0.5)
 
-    st.subheader("📍 Captura de GPS / Ubicación en Tiempo Real")
+    st.subheader("📍 Geolocalización / GPS")
     c_lat, c_lng = st.columns(2)
     with c_lat:
         latitud = st.number_input("Latitud", value=-11.0500, format="%.6f")
     with c_lng:
         longitud = st.number_input("Longitud", value=-75.3300, format="%.6f")
 
-    st.subheader("📷 Fotografía del Lugar / Fachada")
-    foto_file = st.file_uploader("Tomar o subir foto", type=["png", "jpg", "jpeg"])
-    foto_url = ""
-    if foto_file is not None:
-        st.image(foto_file, caption="Vista previa de la imagen", width=250)
-        # Aquí se gestiona la URL temporal o carga al bucket
-        foto_url = f"https://emana-media.s3.amazonaws.com/{foto_file.name}"
-
-    if st.button("💾 Guardar y Confirmar Pedido", type="primary"):
+    if st.button("💾 Guardar Pedido", type="primary"):
         if not cliente_nombre or not local_direccion or total <= 0:
             st.warning("Por favor complete los campos obligatorios (*)")
         else:
@@ -128,13 +130,12 @@ if opcion == "Registrar Pedido / Venta":
                 "latitud": latitud,
                 "longitud": longitud,
                 "tipo_comprobante": tipo_comprobante,
-                "foto_url": foto_url,
                 "fecha_entrega": str(fecha_entrega),
                 "rango_entrega": rango_entrega,
                 "total": total,
                 "estado": "ACTIVO"
             }
-            res = supabase.table("pedidos").insert(nuevo_pedido).execute()
+            supabase.table("pedidos").insert(nuevo_pedido).execute()
             st.success("✅ ¡Pedido registrado con éxito en la nube!")
 
 # --- MÓDULO 2: CONSULTAR PEDIDOS ---
@@ -142,33 +143,15 @@ elif opcion == "Consultar Mis Pedidos":
     st.header("📋 Mis Pedidos Registrados")
     res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
     if res.data:
-        df = pd.DataFrame(res.data)
-        st.dataframe(df[["vendedor", "cliente_nombre", "tipo_comprobante", "fecha_entrega", "rango_entrega", "total"]])
+        st.dataframe(pd.DataFrame(res.data))
     else:
-        st.info("No hay pedidos activos registrados.")
+        st.info("No hay pedidos registrados.")
 
-# --- MÓDULO 3: PAPELERA DE RECICLAJE (SOLO ADMIN) ---
+# --- MÓDULO 3: PAPELERA DE RECICLAJE (ADMIN) ---
 elif opcion == "Papelera de Reciclaje" and st.session_state["rol"] == "ADMIN":
-    st.header("🗑️ Papelera de Reciclaje (Registros Eliminados)")
+    st.header("🗑️ Papelera de Reciclaje")
     res = supabase.table("pedidos").select("*").eq("estado", "PAPELERA").execute()
-    
     if res.data:
-        df_papelera = pd.DataFrame(res.data)
-        st.dataframe(df_papelera)
-        
-        col_res, col_del = st.columns(2)
-        with col_res:
-            id_restaurar = st.selectbox("Seleccione ID para Restaurar", [item["id"] for item in res.data])
-            if st.button("♻️ Restaurar Pedido"):
-                supabase.table("pedidos").update({"estado": "ACTIVO", "eliminado_en": None}).eq("id", id_restaurar).execute()
-                st.success("Pedido restaurado correctamente.")
-                st.rerun()
-                
-        with col_del:
-            id_eliminar = st.selectbox("Seleccione ID para Eliminar Definitivamente", [item["id"] for item in res.data])
-            if st.button("🔥 Eliminar Permanentemente", type="primary"):
-                supabase.table("pedidos").delete().eq("id", id_eliminar).execute()
-                st.success("Pedido eliminado definitivamente de la base de datos.")
-                st.rerun()
+        st.dataframe(pd.DataFrame(res.data))
     else:
-        st.info("La papelera de reciclaje está vacía.")
+        st.info("La papelera está vacía.")
