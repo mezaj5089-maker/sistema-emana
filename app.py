@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ESTILOS CSS3 AVANZADOS (DISEÑO TIPO APPLICACIÓN MODERNA) ---
+# --- ESTILOS CSS3 AVANZADOS (AZUL CLARO & BORDES VIBRANTES) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -22,56 +22,75 @@ st.markdown("""
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
+    
+    /* Fondo Azul Claro Armónico */
     .stApp {
-        background: #f8fafc;
+        background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%);
     }
     
-    /* Header principal con Glassmorphism */
+    /* Header principal con Glassmorphism y Logo Destacado */
     .header-banner {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         padding: 20px 30px;
-        border-radius: 16px;
+        border-radius: 18px;
         color: white;
-        box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.3);
+        box-shadow: 0 10px 20px -3px rgba(14, 165, 233, 0.4);
         margin-bottom: 25px;
         display: flex;
         align-items: center;
-        gap: 20px;
+        gap: 25px;
     }
     
-    /* Tarjetas de producto interactivas estilo E-commerce */
+    /* Tarjetas de producto interactivas */
     .product-card {
         background: #ffffff;
         border-radius: 16px;
         padding: 20px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 2px solid #38bdf8;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+        transition: all 0.3s ease-in-out;
         text-align: center;
     }
     .product-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        border-color: #38bdf8;
+        box-shadow: 0 15px 25px rgba(14, 165, 233, 0.3);
+        border-color: #0284c7;
     }
     
-    /* Botones estilizados */
+    /* Bordes y Botones Neón Vibrantes */
     .stButton > button {
-        border-radius: 10px;
-        font-weight: 600;
-        padding: 0.5rem 1.5rem;
-        transition: all 0.2s ease;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        padding: 0.6rem 1.8rem !important;
+        border: 2px solid #0ea5e9 !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0284c7 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3) !important;
+        transition: all 0.2s ease-in-out !important;
     }
     .stButton > button:hover {
-        transform: scale(1.02);
+        transform: scale(1.03) !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 6px 15px rgba(56, 189, 248, 0.5) !important;
+    }
+    
+    /* Inputs con bordes brillantes activos */
+    div[data-baseweb="input"] > div {
+        border-radius: 10px !important;
+        border: 2px solid #38bdf8 !important;
+        background-color: #ffffff !important;
+    }
+    div[data-baseweb="input"] > div:focus-within {
+        border-color: #0284c7 !important;
+        box-shadow: 0 0 10px rgba(2, 132, 199, 0.4) !important;
     }
     
     /* Estilos de tabla de datos */
     div[data-testid="stDataFrame"] {
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border: 2px solid #7dd3fc;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -98,16 +117,25 @@ if "rol" not in st.session_state:
 if "gps_coords" not in st.session_state:
     st.session_state["gps_coords"] = {"lat": -11.0500, "lng": -75.3300}
 
-# --- BARRA LATERAL CON RELOJ Y GEOLOCALIZACIÓN GPS ---
+# Variables de Imágenes Dinámicas del Catálogo
+if "img_625" not in st.session_state: st.session_state["img_625"] = "botella 625 ml transparente.png"
+if "img_85" not in st.session_state: st.session_state["img_85"] = "BT 8.5L.png"
+if "img_20" not in st.session_state: st.session_state["img_20"] = "caja de 20 l.png"
+
+# --- BARRA LATERAL CON LOGO, RELOJ Y GEOLOCALIZACIÓN GPS ---
 with st.sidebar:
-    st.title("💧 EMANA App")
+    # Logo EMANA Grande en la barra lateral
+    try:
+        st.image("LOGO agua Emana VECTOR 01.png", width=200)
+    except:
+        st.title("💧 EMANA App")
     
-    # Componente de Reloj y GPS dinámico
+    # Componente de Reloj y GPS dinámico en Tiempo Real
     gps_reloj_js = """
-    <div style="background:#0f172a; color:#f8fafc; padding:14px; border-radius:12px; text-align:center; font-family:sans-serif;">
+    <div style="background:#0f172a; color:#f8fafc; padding:14px; border-radius:12px; text-align:center; font-family:sans-serif; border: 2px solid #38bdf8;">
         <div id="fecha" style="font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase;"></div>
         <div id="reloj" style="font-size:20px; color:#38bdf8; font-weight:700; margin-top:2px;"></div>
-        <div id="gps" style="font-size:11px; color:#4ade80; margin-top:6px;">📡 GPS listo</div>
+        <div id="gps" style="font-size:11px; color:#4ade80; margin-top:6px;">📡 GPS activo en tiempo real</div>
     </div>
     <script>
     function actualizarReloj() {
@@ -135,12 +163,13 @@ with st.sidebar:
 
 # --- LOGIN & RECUPERACIÓN ---
 if not st.session_state["autenticado"]:
-    st.markdown("""
-        <div style="text-align: center; padding: 20px 0;">
-            <h1 style="color: #0284c7; font-weight: 700;">Distribuidora de Agua de Mesa EMANA</h1>
-            <p style="color: #64748b;">✨ Vitalidad vida sana</p>
-        </div>
-    """, unsafe_allow_html=True)
+    col_logo_login, col_txt_login = st.columns([1, 3])
+    with col_logo_login:
+        try: st.image("LOGO agua Emana VECTOR 01.png", width=160)
+        except: st.write("💧")
+    with col_txt_login:
+        st.markdown("<h1 style='color: #0284c7; font-weight: 700; margin:0;'>Distribuidora EMANA</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #0369a1; font-weight: 600;'>✨ Vitalidad vida sana</p>", unsafe_allow_html=True)
     
     col_cen, _ = st.columns([2, 1])
     with col_cen:
@@ -178,17 +207,24 @@ if not st.session_state["autenticado"]:
                     st.warning("Correo no válido.")
     st.stop()
 
-# --- ENCABEZADO CON BRANDING ---
-st.markdown("""
-    <div class="header-banner">
-        <div>
-            <h2 style="margin:0; font-weight:700;">Distribuidora EMANA</h2>
-            <p style="margin:0; opacity:0.9;">✨ Vitalidad vida sana</p>
+# --- ENCABEZADO PRINCIPAL CON BRANDING Y LOGO GRANDE ---
+col_head_img, col_head_txt = st.columns([1, 4])
+with col_head_img:
+    try:
+        st.image("LOGO agua Emana VECTOR 01.png", width=140)
+    except:
+        st.write("💧")
+with col_head_txt:
+    st.markdown("""
+        <div class="header-banner">
+            <div>
+                <h1 style="margin:0; font-weight:800; font-size: 32px;">Distribuidora EMANA</h1>
+                <p style="margin:0; opacity:0.95; font-size: 18px; font-weight: 600;">✨ Vitalidad vida sana</p>
+            </div>
         </div>
-    </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# --- MENÚ DE NAVEGACIÓN CON ÍCONOS MODERNOS ---
+# --- MENÚ DE NAVEGACIÓN ---
 with st.sidebar:
     st.write(f"👤 **{st.session_state['usuario']}** ({st.session_state['rol']})")
     
@@ -206,9 +242,9 @@ with st.sidebar:
         menu_icon="cast",
         default_index=0,
         styles={
-            "container": {"padding": "5px!", "background-color": "#f1f5f9"},
+            "container": {"padding": "5px!", "background-color": "#e0f2fe"},
             "icon": {"color": "#0284c7", "font-size": "16px"}, 
-            "nav-link": {"font-size": "14px", "text-align": "left", "margin":"2px", "--hover-color": "#e2e8f0"},
+            "nav-link": {"font-size": "14px", "text-align": "left", "margin":"2px", "--hover-color": "#bae6fd"},
             "nav-link-selected": {"background-color": "#0284c7"},
         }
     )
@@ -219,9 +255,14 @@ with st.sidebar:
         st.session_state["rol"] = None
         st.rerun()
 
-# --- MÓDULO 1: REGISTRAR VENTAS / PEDIDOS ---
+# --- MÓDULO 1: REGISTRAR VENTAS / PEDIDOS Y GESTOR DE CATÁLOGO ---
 if opcion == "Nuevas Ventas":
     st.header("📝 Registrar Nuevo Pedido")
+    
+    # Botón interactivo para asignar/indicar qué vendedor realiza el pedido
+    col_v1, col_v2 = st.columns([2, 2])
+    with col_v1:
+        vendedor_activo = st.text_input("👤 Vendedor que Registra el Pedido:", value=st.session_state["usuario"])
     
     with st.container():
         c1, c2 = st.columns(2)
@@ -234,27 +275,51 @@ if opcion == "Nuevas Ventas":
             fecha_entrega = st.date_input("Fecha de Entrega", min_value=datetime.date.today())
             rango_entrega = st.selectbox("Rango Horario", ["Mañana (8:00 AM - 12:00 PM)", "Tarde (2:00 PM - 6:00 PM)", "Inmediato"])
 
-    st.subheader("📦 Catálogo de Productos")
+    st.subheader("📦 Catálogo de Productos y Modificador de Imágenes")
+    
+    # Gestor para cambiar o quitar imágenes desde cualquier dispositivo
+    with st.expander("⚙️ Opciones de Imágenes del Catálogo (Subir / Cambiar / Quitar)"):
+        up_625 = st.file_uploader("Cambiar Imagen Botella 625ml", type=["png", "jpg", "jpeg"], key="u625")
+        if up_625: st.session_state["img_625"] = up_625
+        if st.button("Quitar Imagen 625ml"): st.session_state["img_625"] = None
+        
+        up_85 = st.file_uploader("Cambiar Imagen Botella 8.5L", type=["png", "jpg", "jpeg"], key="u85")
+        if up_85: st.session_state["img_85"] = up_85
+        if st.button("Quitar Imagen 8.5L"): st.session_state["img_85"] = None
+
+        up_20 = st.file_uploader("Cambiar Imagen Caja 20L", type=["png", "jpg", "jpeg"], key="u20")
+        if up_20: st.session_state["img_20"] = up_20
+        if st.button("Quitar Imagen 20L"): st.session_state["img_20"] = None
+
     p1, p2, p3 = st.columns(3)
     
     with p1:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
-        try: st.image("botella 625 ml transparente.png", use_container_width=True)
-        except: st.markdown("🍾 **Botella 625 ml**")
+        if st.session_state["img_625"] is not None:
+            try: st.image(st.session_state["img_625"], use_container_width=True)
+            except: st.markdown("🍾 **Botella 625 ml**")
+        else:
+            st.markdown("🍾 **Botella 625 ml** *(Sin imagen)*")
         cant_625 = st.number_input("Cantidad 625ml", min_value=0, value=0)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with p2:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
-        try: st.image("BT 8.5L.png", use_container_width=True)
-        except: st.markdown("🪣 **Botella 8.5 L**")
+        if st.session_state["img_85"] is not None:
+            try: st.image(st.session_state["img_85"], use_container_width=True)
+            except: st.markdown("🪣 **Botella 8.5 L**")
+        else:
+            st.markdown("🪣 **Botella 8.5 L** *(Sin imagen)*")
         cant_85 = st.number_input("Cantidad 8.5L", min_value=0, value=0)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with p3:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
-        try: st.image("caja de 20 l.png", use_container_width=True)
-        except: st.markdown("📦 **Caja 20 L**")
+        if st.session_state["img_20"] is not None:
+            try: st.image(st.session_state["img_20"], use_container_width=True)
+            except: st.markdown("📦 **Caja 20 L**")
+        else:
+            st.markdown("📦 **Caja 20 L** *(Sin imagen)*")
         cant_20 = st.number_input("Cantidad 20L", min_value=0, value=0)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -270,7 +335,7 @@ if opcion == "Nuevas Ventas":
             st.warning("Completa los campos obligatorios (*)")
         else:
             nuevo_pedido = {
-                "vendedor": st.session_state["usuario"],
+                "vendedor": vendedor_activo,
                 "cliente_nombre": cliente_nombre,
                 "cliente_doc": cliente_doc,
                 "local_direccion": local_direccion,
@@ -285,7 +350,7 @@ if opcion == "Nuevas Ventas":
                 "estado_entrega": "PENDIENTE"
             }
             supabase.table("pedidos").insert(nuevo_pedido).execute()
-            st.success("✅ ¡Pedido registrado con éxito!")
+            st.success(f"✅ ¡Pedido guardado con éxito por el vendedor {vendedor_activo}!")
 
 # --- MÓDULO 2: CONSULTAR MIS PEDIDOS ---
 elif opcion == "Mis Pedidos":
@@ -303,13 +368,33 @@ elif opcion == "Subir Evidencia":
     if archivo and st.button("Subir Evidencia"):
         st.success(f"Archivo '{archivo.name}' guardado correctamente.")
 
-# --- MÓDULO 4: CONTROL DE RUTAS (ADMIN) ---
+# --- MÓDULO 4: CONTROL DE RUTAS GOOGLE MAPS EN TIEMPO REAL (ADMIN) ---
 elif opcion == "Rutas GPS" and st.session_state["rol"] == "ADMIN":
-    st.header("🗺️ Control y Ubicación de Entregas")
+    st.header("🗺️ Control y Guía de Rutas con Google Maps en Tiempo Real")
     res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
+    
     if res.data:
         df = pd.DataFrame(res.data)
+        st.subheader("📍 Mapa de Entregas y Vendedores Activos")
+        
+        # Mapa nativo con marcadores
         st.map(df[['latitud', 'longitud']].rename(columns={'latitud': 'lat', 'longitud': 'lon'}), zoom=13)
+        
+        # Enlace directo interactivo de Google Maps para guiarlos en tiempo real
+        st.subheader("🧭 Guía de Navegación Directa")
+        pedido_sel = st.selectbox("Selecciona Pedido para Obtener Ruta en Google Maps:", df["cliente_nombre"].tolist())
+        
+        row_ped = df[df["cliente_nombre"] == pedido_sel].iloc[0]
+        google_maps_url = f"https://www.google.com/maps/dir/?api=1&destination={row_ped['latitud']},{row_ped['longitud']}"
+        
+        st.markdown(f'''
+            <a href="{google_maps_url}" target="_blank">
+                <button style="background-color:#0ea5e9; color:white; border:none; padding:12px 24px; border-radius:10px; font-weight:bold; cursor:pointer;">
+                    🗺️ Abrir Ruta en Google Maps Tiempo Real
+                </button>
+            </a>
+        ''', unsafe_allow_html=True)
+        
         st.dataframe(df, use_container_width=True)
 
 # --- MÓDULO 5: ANALÍTICA PREDICTIVA Y GRÁFICOS DASHBOARD ---
@@ -324,7 +409,6 @@ elif opcion == "Analítica Predictiva" and st.session_state["rol"] == "ADMIN":
         m1.metric("Ingresos Totales", f"S/. {df_a['total'].sum():,.2f}")
         m2.metric("Promedio por Pedido", f"S/. {df_a['total'].mean():,.2f}")
         
-        # Gráfico Interactivo de Alto Rendimiento con Plotly (Gratuito)
         fig = px.line(df_a, x="fecha_entrega", y="total", title="Evolución Interactiva de Ventas (S/.)", markers=True)
         fig.update_layout(template="plotly_white")
         st.plotly_chart(fig, use_container_width=True)
