@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- ESTILOS CSS PERSONALIZADOS Y DISEÑO INTERACTIVO ---
+# --- ESTILOS CSS PERSONALIZADOS ---
 st.markdown("""
     <style>
     .stApp {
@@ -58,7 +58,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- ENCABEZADO PRINCIPAL CON LOGO Y ESLOGAN ---
+# --- ENCABEZADO CON LOGO Y ESLOGAN ---
 col_logo, col_titulo = st.columns([1, 4])
 with col_logo:
     try:
@@ -93,7 +93,7 @@ if "rol" not in st.session_state:
 if "gps_coords" not in st.session_state:
     st.session_state["gps_coords"] = {"lat": -11.0500, "lng": -75.3300}
 
-# --- GEOLOCALIZACIÓN GPS Y RELOJ EN TIEMPO REAL (SIDEBAR) ---
+# --- BARRA LATERAL CON RELOJ Y GPS ---
 st.sidebar.title("💧 Distribuidora EMANA")
 
 gps_reloj_js = """
@@ -119,7 +119,7 @@ if (navigator.geolocation) {
             document.getElementById('gps').innerText = '📍 GPS Activo: ' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4);
         },
         (err) => {
-            document.getElementById('gps').innerText = '📍 GPS: Ubicación predeterminada';
+            document.getElementById('gps').innerText = '📍 GPS: Ubicación activa';
         },
         { enableHighAccuracy: true }
     );
@@ -144,7 +144,11 @@ if not st.session_state["autenticado"]:
             
             if btn_login:
                 try:
-                    res = supabase.table("usuarios").select("*").or_(f"username.eq.{user_input},gmail.eq.{user_input}").eq("password", pass_input).execute()
+                    # Consulta segura para compatibilidad
+                    res = supabase.table("usuarios").select("*").eq("username", user_input).eq("password", pass_input).execute()
+                    if not res.data:
+                        res = supabase.table("usuarios").select("*").eq("gmail", user_input).eq("password", pass_input).execute()
+                        
                     if res.data and len(res.data) > 0:
                         st.session_state["autenticado"] = True
                         st.session_state["usuario"] = res.data[0]["username"]
@@ -152,9 +156,9 @@ if not st.session_state["autenticado"]:
                         st.success(f"Bienvenido {st.session_state['usuario']}")
                         st.rerun()
                     else:
-                        st.error("Credenciales incorrectas")
+                        st.error("Usuario o contraseña incorrectos")
                 except Exception as ex:
-                    st.error(f"Error de conexión: {ex}")
+                    st.error(f"Error de acceso: {ex}")
 
     with tab_recuperar:
         st.subheader("Restablecer Contraseña por Gmail")
@@ -166,7 +170,7 @@ if not st.session_state["autenticado"]:
                 st.warning("Ingresa un correo Gmail válido.")
     st.stop()
 
-# --- NAVEGACIÓN Y ROLES DE PERSONAL ---
+# --- NAVEGACIÓN DE MÓDULOS ---
 st.sidebar.write(f"👤 **Usuario:** {st.session_state['usuario']}")
 st.sidebar.write(f"🔰 **Rol:** {st.session_state['rol']}")
 
@@ -269,13 +273,13 @@ elif opcion == "Consultar Mis Pedidos":
     else:
         st.info("No tienes pedidos registrados.")
 
-# --- MÓDULO SUBIR EVIDENCIA (FOTOS/VIDEO) ---
+# --- MÓDULO 3: SUBIR EVIDENCIA (FOTOS/VIDEO) ---
 elif opcion == "Subir Evidencia (Fotos/Video)":
     st.header("📤 Subir Fotos y Videos de Entregas")
     archivo = st.file_uploader("Selecciona archivo multimedia (Imagen/Video)", type=["png", "jpg", "jpeg", "mp4", "mov"])
     if archivo is not None:
         if st.button("Subir Archivo"):
-            st.success(f"✅ Archivo '{archivo.name}' cargado correctamente al servidor por {st.session_state['usuario']}.")
+            st.success(f"✅ Archivo '{archivo.name}' cargado correctamente por {st.session_state['usuario']}.")
 
 # --- MÓDULO ADMINISTRADOR: GESTIÓN DE RUTAS Y PEDIDOS ---
 elif opcion == "Gestión & Rutas GPS (ADMIN)" and st.session_state["rol"] == "ADMIN":
@@ -297,7 +301,7 @@ elif opcion == "Gestión & Rutas GPS (ADMIN)" and st.session_state["rol"] == "AD
             st.success("Pedido modificado con autorización de ADMIN.")
             st.rerun()
 
-# --- MÓDULO DASHBOARD & ANALÍTICA PREDICTIVA ---
+# --- MÓDULO 4: DASHBOARD & ANALÍTICA PREDICTIVA ---
 elif opcion == "Dashboard & Analítica Predictiva" and st.session_state["rol"] == "ADMIN":
     st.header("📊 Dashboard de Ventas y Proyección Predictiva")
     res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
@@ -308,18 +312,16 @@ elif opcion == "Dashboard & Analítica Predictiva" and st.session_state["rol"] =
         filtro_t = st.selectbox("Filtrar Análisis Temporal", ["Diario", "Semanal", "Mensual", "Anual"])
         st.metric("Ventas Totales (S/.)", f"S/. {df_d['total'].sum():,.2f}")
         
-        st.subheader("📈 Tendencia y Ventas")
+        st.subheader("📈 Tendencia de Ventas")
         st.line_chart(df_d.set_index('fecha_entrega')['total'])
         
-        st.subheader("🔮 Predicción Predictiva Próximos Períodos")
+        st.subheader("🔮 Proyección Predictiva")
         promedio = df_d['total'].mean()
-        st.info(f"Proyección estimada para la siguiente ventana de ventas: **S/. {promedio * 1.15:,.2f}** (+15% tendencia estimada)")
+        st.info(f"Proyección estimada para la siguiente ventana de ventas: **S/. {promedio * 1.15:,.2f}** (+15% estimado)")
 
-# --- MÓDULO REGISTRO DE PERSONAL (8 CUENTAS) ---
+# --- MÓDULO 5: REGISTRO DE PERSONAL (8 CUENTAS) ---
 elif opcion == "Registro de Personal (8 Cuentas)" and st.session_state["rol"] == "ADMIN":
     st.header("👥 Gestión del Personal de la Empresa (8 Integrantes)")
-    st.write("Configuración de credenciales individuales con Gmail registrado:")
-    
     res_u = supabase.table("usuarios").select("*").execute()
     if res_u.data:
         st.dataframe(pd.DataFrame(res_u.data), use_container_width=True)
@@ -327,14 +329,17 @@ elif opcion == "Registro de Personal (8 Cuentas)" and st.session_state["rol"] ==
     with st.form("nuevo_personal"):
         u_nom = st.text_input("Usuario")
         u_mail = st.text_input("Gmail Registrado")
-        u_pass = st.text_input("Contraseña Initial", type="password")
+        u_pass = st.text_input("Contraseña Inicial", type="password")
         u_rol = st.selectbox("Rol Asignado", ["VENDEDOR", "ADMIN"])
         if st.form_submit_button("Registrar Colaborador"):
-            supabase.table("usuarios").insert({"username": u_nom, "gmail": u_mail, "password": u_pass, "rol": u_rol}).execute()
-            st.success("Personal registrado correctamente.")
-            st.rerun()
+            try:
+                supabase.table("usuarios").insert({"username": u_nom, "gmail": u_mail, "password": u_pass, "rol": u_rol}).execute()
+                st.success("Personal registrado correctamente.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error al registrar: {e}")
 
-# --- MÓDULO PAPELERA ---
+# --- MÓDULO 6: PAPELERA ---
 elif opcion == "Papelera de Reciclaje" and st.session_state["rol"] == "ADMIN":
     st.header("🗑️ Papelera de Reciclaje")
     res_p = supabase.table("pedidos").select("*").eq("estado", "PAPELERA").execute()
