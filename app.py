@@ -1,162 +1,99 @@
 import streamlit as st
-import streamlit.components.v1 as components
-import datetime
+from supabase import create_client
 import pandas as pd
-from supabase import create_client, Client
 
-# --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(
-    page_title="Sistema EMANA - Gestión de Ventas",
-    page_icon="💧",
-    layout="wide"
-)
+# 1. Configuración de la página
+st.set_page_config(page_title="Sistema EMANA", page_icon="💧", layout="wide")
 
-# --- CONEXIÓN A SUPABASE ---
+# 2. Conexión a Supabase
 @st.cache_resource
 def init_supabase():
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     return create_client(url, key)
 
-try:
-    supabase = init_supabase()
-except Exception as e:
-    st.error("Error conectando a Supabase. Revisa tus Secrets en Streamlit.")
+supabase = init_supabase()
 
-# --- ESTADO DE SESIÓN ---
-if "autenticado" not in st.session_state:
-    st.session_state["autenticado"] = False
-if "usuario" not in st.session_state:
-    st.session_state["usuario"] = None
-if "rol" not in st.session_state:
-    st.session_state["rol"] = None
+# 3. Estilos CSS Personalizados
+st.markdown("""
+    <style>
+    .stApp {
+        background: linear-gradient(135deg, #f0f8ff 0%, #e6f2ff 100%);
+    }
+    .product-card {
+        background-color: white;
+        border-radius: 12px;
+        padding: 15px;
+        border: 2px solid #e0e0e0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    .product-card:hover {
+        border-color: #007bff;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0,123,255,0.15);
+    }
+    .stButton>button {
+        border-radius: 8px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+    .stButton>button:hover {
+        background-color: #0056b3;
+        border-color: #004085;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# --- BARRA LATERAL CON RELOJ DIGITAL EN TIEMPO REAL ---
-st.sidebar.title("💧 Distribuidora EMANA")
-st.sidebar.markdown("---")
+# 4. Formulario de Pedido con Catálogo e Imágenes
+st.title("🛒 Registrar Nuevo Pedido - EMANA")
 
-reloj_js = """
-<div style="background-color:#1e293b; color:#f8fafc; padding:12px; border-radius:8px; text-align:center; font-family:sans-serif;">
-    <div id="fecha" style="font-size:13px; color:#94a3b8; font-weight:bold;"></div>
-    <div id="reloj" style="font-size:24px; color:#38bdf8; font-weight:bold; margin-top:4px;"></div>
-</div>
+col1, col2, col3 = st.columns(3)
 
-<script>
-function actualizarReloj() {
-    const ahora = new Date();
-    const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const fechaTexto = ahora.toLocaleDateString('es-ES', opcionesFecha);
-    const horaTexto = ahora.toLocaleTimeString('es-ES');
+with col1:
+    st.markdown('<div class="product-card">', unsafe_allow_html=True)
+    st.image("https://via.placeholder.com/150?text=Botella+625ml", width=120)
+    st.subheader("Botella 625 ml")
+    cant_625 = st.number_input("Cantidad", min_value=0, value=0, key="c625")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col2:
+    st.markdown('<div class="product-card">', unsafe_allow_html=True)
+    st.image("https://via.placeholder.com/150?text=Botella+8.5L", width=120)
+    st.subheader("Botella 8.5 L")
+    cant_85 = st.number_input("Cantidad", min_value=0, value=0, key="c85")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col3:
+    st.markdown('<div class="product-card">', unsafe_allow_html=True)
+    st.image("https://via.placeholder.com/150?text=Caja+20L", width=120)
+    st.subheader("Caja de 20 L")
+    cant_20 = st.number_input("Cantidad", min_value=0, value=0, key="c20")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# 5. Vista de Administrador para Modificar Pedidos
+if st.session_state.get("rol") == "ADMIN":
+    st.divider()
+    st.header("🛠️ Panel de Control - Modificar Pedidos")
     
-    document.getElementById('fecha').innerText = fechaTexto;
-    document.getElementById('reloj').innerText = '⏰ ' + horaTexto;
-}
-setInterval(actualizarReloj, 1000);
-actualizarReloj();
-</script>
-"""
-
-# Renderizar el componente dinámico en la barra lateral
-with st.sidebar:
-    components.html(reloj_js, height=100)
-
-st.sidebar.markdown("---")
-
-# --- PANTALLA DE LOGIN ---
-if not st.session_state["autenticado"]:
-    st.title("🔒 Iniciar Sesión - Sistema EMANA")
-    with st.form("form_login"):
-        user_input = st.text_input("Usuario").strip()
-        pass_input = st.text_input("Contraseña", type="password").strip()
-        btn_login = st.form_submit_button("Ingresar")
+    # Obtener pedidos desde Supabase
+    res = supabase.table("pedidos").select("*").execute()
+    df = pd.DataFrame(res.data)
+    
+    if not df.empty:
+        st.dataframe(df)
         
-        if btn_login:
-            try:
-                res = supabase.table("usuarios").select("*").eq("username", user_input).eq("password", pass_input).execute()
-                if res.data and len(res.data) > 0:
-                    st.session_state["autenticado"] = True
-                    st.session_state["usuario"] = res.data[0]["username"]
-                    st.session_state["rol"] = res.data[0]["rol"]
-                    st.success(f"Bienvenido {user_input}")
-                    st.rerun()
-                else:
-                    st.error("Usuario o contraseña incorrectos")
-            except Exception as ex:
-                st.error(f"Error de conexión con la base de datos: {ex}")
-    st.stop()
-
-# --- NAVEGACIÓN Y PANEL DE CONTROL ---
-st.sidebar.write(f"👤 **Usuario:** {st.session_state['usuario']}")
-st.sidebar.write(f"🔰 **Rol:** {st.session_state['rol']}")
-
-if st.sidebar.button("Cerrar Sesión"):
-    st.session_state["autenticado"] = False
-    st.session_state["usuario"] = None
-    st.session_state["rol"] = None
-    st.rerun()
-
-opciones_menu = ["Registrar Pedido / Venta", "Consultar Mis Pedidos"]
-if st.session_state["rol"] == "ADMIN":
-    opciones_menu.extend(["Dashboard & Ventas Globales", "Papelera de Reciclaje"])
-
-opcion = st.sidebar.radio("Navegación / Módulos", opciones_menu)
-
-# --- MÓDULO 1: REGISTRAR PEDIDO ---
-if opcion == "Registrar Pedido / Venta":
-    st.header("📝 Registrar Nuevo Pedido")
-    col1, col2 = st.columns(2)
-    with col1:
-        cliente_nombre = st.text_input("Nombre Completo / Razón Social *")
-        cliente_doc = st.text_input("DNI / RUC")
-        local_direccion = st.text_input("Dirección del Local *")
-        tipo_comprobante = st.selectbox("Comprobante", ["BOLETA", "FACTURA", "NOTA"])
-    
-    with col2:
-        fecha_entrega = st.date_input("Fecha de Entrega", min_value=datetime.date.today())
-        rango_entrega = st.selectbox("Rango Horario", ["Mañana (8:00 AM - 12:00 PM)", "Tarde (2:00 PM - 6:00 PM)", "Inmediato"])
-        total = st.number_input("Monto Total (S/.) *", min_value=0.0, step=0.5)
-
-    st.subheader("📍 Geolocalización / GPS")
-    c_lat, c_lng = st.columns(2)
-    with c_lat:
-        latitud = st.number_input("Latitud", value=-11.0500, format="%.6f")
-    with c_lng:
-        longitud = st.number_input("Longitud", value=-75.3300, format="%.6f")
-
-    if st.button("💾 Guardar Pedido", type="primary"):
-        if not cliente_nombre or not local_direccion or total <= 0:
-            st.warning("Por favor complete los campos obligatorios (*)")
-        else:
-            nuevo_pedido = {
-                "vendedor": st.session_state["usuario"],
-                "cliente_nombre": cliente_nombre,
-                "cliente_doc": cliente_doc,
-                "local_direccion": local_direccion,
-                "latitud": latitud,
-                "longitud": longitud,
-                "tipo_comprobante": tipo_comprobante,
-                "fecha_entrega": str(fecha_entrega),
-                "rango_entrega": rango_entrega,
-                "total": total,
-                "estado": "ACTIVO"
-            }
-            supabase.table("pedidos").insert(nuevo_pedido).execute()
-            st.success("✅ ¡Pedido registrado con éxito en la nube!")
-
-# --- MÓDULO 2: CONSULTAR PEDIDOS ---
-elif opcion == "Consultar Mis Pedidos":
-    st.header("📋 Mis Pedidos Registrados")
-    res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
-    if res.data:
-        st.dataframe(pd.DataFrame(res.data))
-    else:
-        st.info("No hay pedidos registrados.")
-
-# --- MÓDULO 3: PAPELERA DE RECICLAJE (ADMIN) ---
-elif opcion == "Papelera de Reciclaje" and st.session_state["rol"] == "ADMIN":
-    st.header("🗑️ Papelera de Reciclaje")
-    res = supabase.table("pedidos").select("*").eq("estado", "PAPELERA").execute()
-    if res.data:
-        st.dataframe(pd.DataFrame(res.data))
-    else:
-        st.info("La papelera está vacía.")
+        pedido_id = st.selectbox("Selecciona ID de Pedido para modificar", df["id"])
+        nuevo_estado = st.selectbox("Estado del Pedido", ["Pendiente", "Entregado", "No Entregado", "Cancelado"])
+        vendedor_asignado = st.text_input("Vendedor a cargo", value="admin")
+        
+        if st.button("Actualizar Pedido"):
+            supabase.table("pedidos").update({
+                "estado": nuevo_estado,
+                "vendedor": vendedor_asignado
+            }).eq("id", pedido_id).execute()
+            st.success("Pedido actualizado correctamente.")
