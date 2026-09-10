@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import datetime
 import pandas as pd
 from supabase import create_client, Client
@@ -30,7 +31,7 @@ if "usuario" not in st.session_state:
 if "rol" not in st.session_state:
     st.session_state["rol"] = None
 
-# --- RELOJ EN TIEMPO REAL CON JAVASCRIPT (NO SE CONGELA) ---
+# --- BARRA LATERAL CON RELOJ DIGITAL EN TIEMPO REAL ---
 st.sidebar.title("💧 Distribuidora EMANA")
 st.sidebar.markdown("---")
 
@@ -54,7 +55,11 @@ setInterval(actualizarReloj, 1000);
 actualizarReloj();
 </script>
 """
-st.sidebar.components.v1.html(reloj_js, height=100)
+
+# Renderizar el componente dinámico en la barra lateral
+with st.sidebar:
+    components.html(reloj_js, height=100)
+
 st.sidebar.markdown("---")
 
 # --- PANTALLA DE LOGIN ---
