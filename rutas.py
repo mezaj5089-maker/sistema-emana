@@ -1,3 +1,4 @@
+import time
 import os
 import pandas as pd
 import streamlit as st
@@ -65,9 +66,14 @@ def mostrar_modulo_rutas_gps(supabase_client):
 
     GPS si el usuario es un Vendedor/Colaborador.
     """
-    st.subheader("📍 Monitoreo y Rutas GPS en Vivo")
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.subheader("📍 Monitoreo y Rutas GPS en Vivo")
+    with col2:
+        if st.button("🔄 Actualizar Mapa"):
+            st.rerun()
 
-    # 1. Si el usuario logueado es un colaborador/vendedor, se activa el rastreo en segundo plano
+    # 1. Si el usuario logueado es un colaborador/vendedor, se activa el rastreo
     usuario_actual = st.session_state.get("usuario") or st.session_state.get("user_id") or "vendedor_anonimo"
     
     # Obtención de credenciales desde Streamlit Secrets o Variables de Entorno
@@ -77,7 +83,7 @@ def mostrar_modulo_rutas_gps(supabase_client):
     if url_supabase and key_supabase:
         componente_rastreo_gps(usuario_actual, url_supabase, key_supabase)
 
-    # 2. Visualización y Control de Datos
+    # 2. Visualización y Control de Datos desde Supabase
     try:
         res = supabase_client.table("ubicaciones_vendedores").select("*").execute()
         datos = res.data
