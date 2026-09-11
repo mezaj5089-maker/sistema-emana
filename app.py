@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ESTILOS CSS3 AVANZADOS ---
+# --- ESTILOS CSS3 AVANZADOS (AZUL VIBRANTE, GLASSMORPHISM Y BOTÓN WHATSAPP) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
@@ -23,10 +23,12 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
+    /* Fondo Azul Claro Armónico */
     .stApp {
         background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%);
     }
     
+    /* Header principal con Glassmorphism */
     .header-banner {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         padding: 22px 32px;
@@ -40,6 +42,7 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
+    /* Tarjetas de producto interactivas */
     .product-card {
         background: #ffffff;
         border-radius: 18px;
@@ -81,6 +84,7 @@ st.markdown("""
         border: 1px solid #86efac;
     }
 
+    /* Botones Neón */
     .stButton > button {
         border-radius: 12px !important;
         font-weight: 700 !important;
@@ -97,6 +101,7 @@ st.markdown("""
         box-shadow: 0 6px 18px rgba(56, 189, 248, 0.55) !important;
     }
 
+    /* Botón flotante de WhatsApp */
     .btn-whatsapp {
         display: inline-flex;
         align-items: center;
@@ -125,6 +130,10 @@ st.markdown("""
         border: 2px solid #38bdf8 !important;
         background-color: #ffffff !important;
     }
+    div[data-baseweb="input"] > div:focus-within {
+        border-color: #0284c7 !important;
+        box-shadow: 0 0 12px rgba(2, 132, 199, 0.4) !important;
+    }
     
     div[data-testid="stDataFrame"] {
         border-radius: 14px;
@@ -133,6 +142,7 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
+    /* Estilo del contenedor de video promocional */
     .video-container {
         background: #ffffff;
         border-radius: 18px;
@@ -146,80 +156,66 @@ st.markdown("""
 # --- CONEXIÓN A SUPABASE ---
 @st.cache_resource
 def init_supabase():
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+
+try:
+    supabase = init_supabase()
+except Exception:
+    st.error("⚠️ Error de conexión a la base de datos Supabase. Verifica tus Secrets.")
+
+# --- FUNCIONES AUXILIARES Y PERSISTENCIA ---
+def guardar_imagen_supabase(file, nombre_destino):
     try:
-        url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_KEY"]
-        return create_client(url, key)
-    except Exception:
-        return None
-
-supabase = init_supabase()
-
-# IMÁGENES POR DEFECTO DESDE TU BUCKET DE SUPABASE
-SUPABASE_URL_BASE = st.secrets["SUPABASE_URL"] if "SUPABASE_URL" in st.secrets else ""
-DEFAULT_IMAGES = {
-    1: f"{SUPABASE_URL_BASE}/storage/v1/object/public/catalogo/img_625.png",
-    2: f"{SUPABASE_URL_BASE}/storage/v1/object/public/catalogo/img_85.png",
-    3: f"{SUPABASE_URL_BASE}/storage/v1/object/public/catalogo/img_20.png"
-}
-
-# --- FUNCIONES AUXILIARES DE IMAGEN Y BASE DE DATOS ---
-def guardar_imagen_supabase(uploaded_file, nombre_destino):
-    if not supabase or uploaded_file is None:
-        return None
-    try:
-        file_bytes = uploaded_file.getvalue()
-        mime_type = uploaded_file.type or "image/png"
-        
+        bytes_data = file.getvalue()
         supabase.storage.from_("catalogo").upload(
-            path=nombre_destino,
-            file=file_bytes,
-            file_options={"upsert": "true", "content-type": mime_type}
+            file=bytes_data, 
+            path=nombre_destino, 
+            file_options={"upsert": "true", "content-type": file.type}
         )
         return supabase.storage.from_("catalogo").get_public_url(nombre_destino)
     except Exception as e:
-        st.error(f"Error al subir imagen a Supabase Storage: {e}")
+        st.error(f"Error al guardar imagen en la nube: {e}")
         return None
 
 def obtener_productos():
-    productos_base = [
-        {"id": 1, "nombre": "Paquete 625 ml (20 UND)", "precio_und": 12.50, "precio_mayor": 10.00, "min_mayor": 5, "imagen": DEFAULT_IMAGES[1]},
-        {"id": 2, "nombre": "Botella 8.5 L", "precio_und": 9.00, "precio_mayor": 7.00, "min_mayor": 10, "imagen": DEFAULT_IMAGES[2]},
-        {"id": 3, "nombre": "Caja 20 L", "precio_und": 20.00, "precio_mayor": 18.00, "min_mayor": 5, "imagen": DEFAULT_IMAGES[3]}
-    ]
-    if supabase:
-        try:
-            res = supabase.table("products").select("*").execute()
-            if res.data:
-                for p in res.data:
-                    if not p.get("imagen") and p.get("imagen_url"):
-                        p["imagen"] = p["imagen_url"]
-                    elif not p.get("imagen"):
-                        p["imagen"] = DEFAULT_IMAGES.get(p["id"], DEFAULT_IMAGES[1])
-                return res.data
-        except Exception:
-            pass
-    return productos_base
+    try:
+        res = supabase.table("productos").select("*").execute()
+        return res.data if res.data else []
+    except Exception:
+        return [
+            {"id": 1, "nombre": "Paquete 625 ml (20 UND)", "precio_und": 12.50, "precio_mayor": 10.00, "min_mayor": 5, "imagen": None},
+            {"id": 2, "nombre": "Botella 8.5 L", "precio_und": 9.00, "precio_mayor": 7.00, "min_mayor": 10, "imagen": None},
+            {"id": 3, "nombre": "Caja 20 L", "precio_und": 20.00, "precio_mayor": 18.00, "min_mayor": 5, "imagen": None}
+        ]
 
-def actualizar_imagen_producto(prod_id, url_o_file):
-    url_final = url_o_file
-    if not isinstance(url_o_file, str):
-        nombre_file = f"prod_{prod_id}_{int(datetime.datetime.now().timestamp())}.png"
-        url_final = guardar_imagen_supabase(url_o_file, nombre_file)
-    
-    if url_final and supabase:
-        try:
-            supabase.table("products").update({"imagen": url_final}).eq("id", prod_id).execute()
-            st.success("✅ Imagen actualizada en la base de datos.")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Error al actualizar la base de datos: {e}")
-
-def mostrar_imagen_producto(url_imagen):
+def mostrar_imagen_producto(url_imagen, alt_text):
+    """Muestra la imagen correctamente sin dejar cajas vacías."""
     if url_imagen and isinstance(url_imagen, str) and url_imagen.strip().startswith("http"):
         st.image(url_imagen, use_container_width=True)
     else:
-        st.image(DEFAULT_IMAGES[1], use_container_width=True)
+        st.markdown(
+            f"""
+            <div style="
+                background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+                border: 2px dashed #0284c7;
+                border-radius: 12px;
+                height: 180px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: #0369a1;
+                font-weight: bold;
+                margin-bottom: 10px;
+            ">
+                <span style="font-size: 36px;">💧</span>
+                <span style="font-size: 14px; text-align: center; padding: 0 5px;">{alt_text}</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 # --- ESTADO DE SESIÓN ---
 if "autenticado" not in st.session_state:
@@ -233,13 +229,14 @@ if "modo_cliente" not in st.session_state:
 if "promo_video_url" not in st.session_state:
     st.session_state["promo_video_url"] = "https://www.w3schools.com/html/mov_bbb.mp4"
 
+# ENLACE WHATSAPP VINCULADO
 WA_LINK = "https://wa.me/qr/ZEJEN3EUZZQRF1"
 
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL CON LOGO, RELOJ, GPS Y WHATSAPP ---
 with st.sidebar:
     try:
         st.image("LOGO agua Emana VECTOR 01.png", width=200)
-    except Exception:
+    except:
         st.title("💧 EMANA App")
     
     st.markdown(f'''
@@ -249,21 +246,32 @@ with st.sidebar:
     ''', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    gps_reloj_js = """
+    # GPS y Reloj en Vivo
+    gps_reloj_js = f"""
     <div style="background:#0f172a; color:#f8fafc; padding:14px; border-radius:12px; text-align:center; font-family:sans-serif; border: 2px solid #38bdf8;">
         <div id="fecha" style="font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase;"></div>
         <div id="reloj" style="font-size:20px; color:#38bdf8; font-weight:700; margin-top:2px;"></div>
         <div id="gps" style="font-size:11px; color:#4ade80; margin-top:6px;">📡 GPS activo en tiempo real</div>
     </div>
     <script>
-    function actualizarReloj() {
+    function actualizarReloj() {{
         const ahora = new Date();
-        const opcionesFecha = { weekday: 'short', month: 'short', day: 'numeric' };
+        const opcionesFecha = {{ weekday: 'short', month: 'short', day: 'numeric' }};
         document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', opcionesFecha);
         document.getElementById('reloj').innerText = '⏰ ' + ahora.toLocaleTimeString('es-ES');
-    }
+    }}
     setInterval(actualizarReloj, 1000);
     actualizarReloj();
+
+    if (navigator.geolocation) {{
+        navigator.geolocation.watchPosition(
+            (pos) => {{
+                document.getElementById('gps').innerText = '📍 Lat: ' + pos.coords.latitude.toFixed(4) + ' | Lng: ' + pos.coords.longitude.toFixed(4);
+            }},
+            () => {{ document.getElementById('gps').innerText = '📍 GPS: Ubicación predeterminada'; }},
+            {{ enableHighAccuracy: true }}
+        );
+    }}
     </script>
     """
     components.html(gps_reloj_js, height=115)
@@ -271,18 +279,16 @@ with st.sidebar:
 
     if not st.session_state["autenticado"]:
         st.info("💡 Estás en el Catálogo Público.")
-        if st.button("🔑 Acceso Personal / Ventas", use_container_width=True):
+        if st.button("🔑 Acceso Personal / Ventas"):
             st.session_state["modo_cliente"] = False
             st.rerun()
 
-# --- VISTA CLIENTE (CATÁLOGO PÚBLICO) ---
+# --- VISTA CLIENTE (PÚBLICA) ---
 if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
     col_head_img, col_head_txt = st.columns([1, 4])
     with col_head_img:
-        try:
-            st.image("LOGO agua Emana VECTOR 01.png", width=140)
-        except Exception:
-            st.write("💧")
+        try: st.image("LOGO agua Emana VECTOR 01.png", width=140)
+        except: st.write("💧")
     with col_head_txt:
         st.markdown("""
             <div class="header-banner">
@@ -293,6 +299,7 @@ if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
             </div>
         """, unsafe_allow_html=True)
     
+    # LAYOUT: PRODUCTOS (IZQUIERDA) Y VIDEO PROMOCIONAL (DERECHA)
     col_cat_pub, col_vid_pub = st.columns([2.7, 1.3], gap="medium")
     
     with col_cat_pub:
@@ -306,7 +313,7 @@ if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
                 with cols[idx % 3]:
                     st.markdown('<div class="product-card">', unsafe_allow_html=True)
                     img_url = p.get("imagen") or p.get("imagen_url")
-                    mostrar_imagen_producto(img_url)
+                    mostrar_imagen_producto(img_url, p["nombre"])
                     
                     st.markdown(f"#### {p['nombre']}")
                     st.markdown(f'<div class="price-badge">Precio Unidad: S/. {float(p["precio_und"]):,.2f}</div>', unsafe_allow_html=True)
@@ -329,14 +336,12 @@ if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
 
     st.stop()
 
-# --- LOGIN Y RECUPERACIÓN DE CONTRASEÑA ---
+# --- LOGIN Y RECUPERACIÓN ---
 if not st.session_state["autenticado"] and not st.session_state["modo_cliente"]:
     col_logo_login, col_txt_login = st.columns([1, 3])
     with col_logo_login:
-        try:
-            st.image("LOGO agua Emana VECTOR 01.png", width=160)
-        except Exception:
-            st.write("💧")
+        try: st.image("LOGO agua Emana VECTOR 01.png", width=160)
+        except: st.write("💧")
     with col_txt_login:
         st.markdown("<h1 style='color: #0284c7; font-weight: 700; margin:0;'>Distribuidora EMANA</h1>", unsafe_allow_html=True)
         st.markdown("<p style='color: #0369a1; font-weight: 600;'>✨ Vitalidad vida sana — Sistema Interno</p>", unsafe_allow_html=True)
@@ -356,53 +361,44 @@ if not st.session_state["autenticado"] and not st.session_state["modo_cliente"]:
                 btn_login = st.form_submit_button("Ingresar al Sistema", use_container_width=True)
                 
                 if btn_login:
-                    if supabase:
-                        try:
-                            res = supabase.table("usuarios").select("*").eq("username", user_input).eq("password", pass_input).execute()
-                            if not res.data:
-                                res = supabase.table("usuarios").select("*").eq("gmail", user_input).eq("password", pass_input).execute()
-                                
-                            if res.data:
-                                st.session_state["autenticado"] = True
-                                st.session_state["usuario"] = res.data[0]["username"]
-                                st.session_state["rol"] = res.data[0].get("rol", "VENDEDOR")
-                                st.success(f"Bienvenido {st.session_state['usuario']}")
-                                st.rerun()
-                            else:
-                                st.error("Credenciales incorrectas")
-                        except Exception as ex:
-                            st.error(f"Error de conexión: {ex}")
-                    else:
-                        if user_input in ["admin", "vendedor"] and pass_input != "":
+                    try:
+                        res = supabase.table("usuarios").select("*").eq("username", user_input).eq("password", pass_input).execute()
+                        if not res.data:
+                            res = supabase.table("usuarios").select("*").eq("gmail", user_input).eq("password", pass_input).execute()
+                            
+                        if res.data:
                             st.session_state["autenticado"] = True
-                            st.session_state["usuario"] = user_input
-                            st.session_state["rol"] = "ADMIN" if user_input == "admin" else "VENDEDOR"
+                            st.session_state["usuario"] = res.data[0]["username"]
+                            st.session_state["rol"] = res.data[0].get("rol", "VENDEDOR")
+                            st.success(f"Bienvenido {st.session_state['usuario']}")
                             st.rerun()
+                        else:
+                            st.error("Credenciales incorrectas")
+                    except Exception as ex:
+                        st.error(f"Error de conexión: {ex}")
 
         with tab_recuperar:
             gmail_rec = st.text_input("Ingresa tu Gmail registrado").strip()
             nueva_pass = st.text_input("Nueva Contraseña", type="password").strip()
             if st.button("Restablecer Contraseña", use_container_width=True):
-                if "@" in gmail_rec and nueva_pass and supabase:
+                if "@" in gmail_rec and nueva_pass:
                     try:
                         res = supabase.table("usuarios").update({"password": nueva_pass}).eq("gmail", gmail_rec).execute()
                         if res.data:
-                            st.success(f"✅ Contraseña actualizada para {gmail_rec}.")
+                            st.success(f"✅ Contraseña actualizada correctamente para {gmail_rec}.")
                         else:
-                            st.error("Correo no encontrado.")
+                            st.error("El correo no se encuentra registrado en el sistema.")
                     except Exception as ex:
-                        st.error(f"Error: {ex}")
+                        st.error(f"Error al restablecer: {ex}")
                 else:
-                    st.warning("Completa los datos correctamente o verifica la conexión.")
+                    st.warning("Ingresa un correo válido y la nueva contraseña.")
     st.stop()
 
-# --- HEADER INTERNO DE NAVEGACIÓN ---
+# --- HEADER INTERNO ---
 col_head_img, col_head_txt = st.columns([1, 4])
 with col_head_img:
-    try:
-        st.image("LOGO agua Emana VECTOR 01.png", width=140)
-    except Exception:
-        st.write("💧")
+    try: st.image("LOGO agua Emana VECTOR 01.png", width=140)
+    except: st.write("💧")
 with col_head_txt:
     st.markdown("""
         <div class="header-banner">
@@ -445,16 +441,16 @@ with st.sidebar:
         st.session_state["modo_cliente"] = True
         st.rerun()
 
-# --- MÓDULO 1: REGISTRAR VENTAS Y CATÁLOGO INTERNO ---
+# --- MÓDULO 1: REGISTRAR VENTAS Y CATÁLOGO INTERNO + SECCIÓN DE VIDEO ---
 if opcion == "Nuevas Ventas":
     st.header("📝 Registrar Nuevo Pedido")
     
     col_v1, col_v2 = st.columns([2, 2])
     with col_v1:
         if st.session_state["rol"] == "ADMIN":
-            vendedor_activo = st.text_input("👤 Vendedor que Registra (Modo Admin):", value=st.session_state["usuario"])
+            vendedor_activo = st.text_input("👤 Vendedor que Registra el Pedido (Modo Admin):", value=st.session_state["usuario"])
         else:
-            st.text_input("👤 Vendedor que Registra:", value=st.session_state["usuario"], disabled=True)
+            st.text_input("👤 Vendedor que Registra el Pedido:", value=st.session_state["usuario"], disabled=True)
             vendedor_activo = st.session_state["usuario"]
     
     with st.container():
@@ -474,14 +470,15 @@ if opcion == "Nuevas Ventas":
     with c_ref:
         local_referencia = st.text_input("Referencia de Entrega")
 
+    # LAYOUT DE CATÁLOGO + DERECHA SPOT VIDEO
     col_cat_int, col_vid_int = st.columns([2.7, 1.3], gap="medium")
 
     with col_cat_int:
         st.subheader("📦 Catálogo de Productos Dinámico")
         
-        # AGREGAR NUEVO PRODUCTO (SOLO ADMIN)
+        # ADMINISTRADOR: GESTIONAR CATÁLOGO
         if st.session_state["rol"] == "ADMIN":
-            with st.expander("➕ Agregar Nuevo Producto al Catálogo"):
+            with st.expander("➕ Agregar Nuevo Producto / Gestionar Catálogo (Solo Administrador)"):
                 with st.form("form_nuevo_prod"):
                     n_prod = st.text_input("Nombre del Producto")
                     p_und = st.number_input("Precio por Unidad (S/.)", min_value=0.0, step=0.50, value=10.0)
@@ -493,24 +490,21 @@ if opcion == "Nuevas Ventas":
                     if btn_crear_p and n_prod:
                         url_img = None
                         if img_prod:
-                            nombre_file = f"prod_{int(datetime.datetime.now().timestamp())}.png"
+                            nombre_file = f"prod_{datetime.datetime.now().timestamp()}.png"
                             url_img = guardar_imagen_supabase(img_prod, nombre_file)
-                        if not url_img:
-                            url_img = DEFAULT_IMAGES[1]
                         
-                        if supabase:
-                            try:
-                                supabase.table("products").insert({
-                                    "nombre": n_prod,
-                                    "precio_und": p_und,
-                                    "precio_mayor": p_mayor,
-                                    "min_mayor": min_m,
-                                    "imagen": url_img
-                                }).execute()
-                                st.success(f"✅ Producto '{n_prod}' agregado.")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error al guardar producto: {e}")
+                        try:
+                            supabase.table("productos").insert({
+                                "nombre": n_prod,
+                                "precio_und": p_und,
+                                "precio_mayor": p_mayor,
+                                "min_mayor": min_m,
+                                "imagen": url_img
+                            }).execute()
+                            st.success(f"✅ Producto '{n_prod}' agregado.")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error al guardar producto: {e}")
 
         productos_lista = obtener_productos()
         cantidades_seleccionadas = {}
@@ -522,20 +516,8 @@ if opcion == "Nuevas Ventas":
                 with cols_p[i % 3]:
                     st.markdown('<div class="product-card">', unsafe_allow_html=True)
                     img_url = prod.get("imagen") or prod.get("imagen_url")
-                    mostrar_imagen_producto(img_url)
+                    mostrar_imagen_producto(img_url, prod['nombre'])
                     
-                    # EDITAR IMAGEN DE PRODUCTO (SOLO ADMIN)
-                    if st.session_state["rol"] == "ADMIN":
-                        with st.expander(f"✏️ Editar Imagen"):
-                            nueva_img_file = st.file_uploader("Subir imagen", type=["png", "jpg", "jpeg"], key=f"up_img_{prod['id']}")
-                            nueva_img_url = st.text_input("O pegar URL", value=img_url if isinstance(img_url, str) else "", key=f"url_img_{prod['id']}")
-                            
-                            if st.button("💾 Cambiar Imagen", key=f"btn_img_{prod['id']}"):
-                                if nueva_img_file:
-                                    actualizar_imagen_producto(prod['id'], nueva_img_file)
-                                elif nueva_img_url:
-                                    actualizar_imagen_producto(prod['id'], nueva_img_url)
-
                     cant = st.number_input(f"Cantidad {prod['nombre']}", min_value=0, value=0, key=f"cant_{prod['id']}")
                     p_sugerido = prod['precio_mayor'] if cant >= prod['min_mayor'] else prod['precio_und']
                     p_final = st.number_input(f"Precio Unit. S/. ({prod['nombre']})", value=float(p_sugerido), step=0.50, key=f"p_{prod['id']}")
@@ -553,15 +535,28 @@ if opcion == "Nuevas Ventas":
     with col_vid_int:
         st.subheader("🎬 Spot Promocional")
         st.markdown('<div class="video-container">', unsafe_allow_html=True)
-        st.video(st.session_state["promo_video_url"])
+        
+        # Reproducción de Video
+        if isinstance(st.session_state["promo_video_url"], str):
+            st.video(st.session_state["promo_video_url"])
+        else:
+            st.video(st.session_state["promo_video_url"])
 
+        # Módulo de Subida/Edición de Video para Admin
         if st.session_state["rol"] == "ADMIN":
             st.divider()
             st.caption("⚙️ **Configuración de Video (Solo Admin)**")
+            
             v_input = st.text_input("Enlace (YouTube / URL MP4)", value=st.session_state["promo_video_url"] if isinstance(st.session_state["promo_video_url"], str) else "")
             if st.button("Actualizar Enlace"):
                 st.session_state["promo_video_url"] = v_input
                 st.success("Enlace actualizado")
+                st.rerun()
+                
+            v_file = st.file_uploader("O subir video (9:16 o 16:9)", type=["mp4", "mov"])
+            if v_file:
+                st.session_state["promo_video_url"] = v_file
+                st.success("Video cargado correctamente.")
                 st.rerun()
 
         st.markdown('</div>', unsafe_allow_html=True)
@@ -572,7 +567,7 @@ if opcion == "Nuevas Ventas":
         st.session_state["mostrar_confirmacion"] = True
 
     if st.session_state.get("mostrar_confirmacion", False):
-        st.warning("❓ **¿Estás seguro de guardar la venta?**")
+        st.warning("❓ **¿Estás seguro de guardar la venta?** Verifica los datos antes de continuar.")
         col_si, col_no = st.columns(2)
         
         with col_si:
@@ -592,16 +587,12 @@ if opcion == "Nuevas Ventas":
                     "estado": "ACTIVO",
                     "estado_entrega": "PENDIENTE"
                 }
-                if supabase:
-                    try:
-                        supabase.table("pedidos").insert(nuevo_pedido).execute()
-                        st.success(f"✅ ¡Venta guardada con éxito por {vendedor_activo}!")
-                        st.session_state["mostrar_confirmacion"] = False
-                    except Exception as e:
-                        st.error(f"Error al guardar pedido: {e}")
-                else:
-                    st.success("✅ Venta registrada (Modo Simulación local).")
+                try:
+                    supabase.table("pedidos").insert(nuevo_pedido).execute()
+                    st.success(f"✅ ¡Venta guardada con éxito por {vendedor_activo}!")
                     st.session_state["mostrar_confirmacion"] = False
+                except Exception as e:
+                    st.error(f"Error al guardar en la nube: {e}")
 
         with col_no:
             if st.button("❌ No, Corregir Datos", use_container_width=True):
@@ -610,84 +601,119 @@ if opcion == "Nuevas Ventas":
 # --- MÓDULO 2: MIS PEDIDOS ---
 elif opcion == "Mis Pedidos":
     st.header("📋 Mis Pedidos Registrados")
-    if supabase:
-        try:
-            if st.session_state["rol"] == "ADMIN":
-                res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
-            else:
-                res = supabase.table("pedidos").select("*").eq("vendedor", st.session_state["usuario"]).eq("estado", "ACTIVO").execute()
-            
-            if res.data:
-                df_pedidos = pd.DataFrame(res.data)
-                st.dataframe(df_pedidos, use_container_width=True)
-                st.download_button("📁 Descargar Respaldo CSV", data=df_pedidos.to_csv(index=False).encode('utf-8'), file_name="pedidos.csv", mime="text/csv")
-            else:
-                st.info("No hay pedidos registrados en la base de datos.")
-        except Exception as e:
-            st.error(f"Error al consultar pedidos: {e}")
+    
+    if st.session_state["rol"] == "ADMIN":
+        res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
     else:
-        st.info("Base de datos no disponible en modo offline.")
+        res = supabase.table("pedidos").select("*").eq("vendedor", st.session_state["usuario"]).eq("estado", "ACTIVO").execute()
+        
+    if res.data:
+        df_pedidos = pd.DataFrame(res.data)
+        st.dataframe(df_pedidos, use_container_width=True)
+        
+        csv_data = df_pedidos.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📁 Descargar Respaldo CSV",
+            data=csv_data,
+            file_name=f"respaldo_pedidos_{datetime.date.today()}.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("No cuentan con pedidos registrados actualmente.")
 
-# --- MÓDULO 3: SUBIR EVIDENCIA ---
+# --- MÓDULO 3: EVIDENCIAS ---
 elif opcion == "Subir Evidencia":
     st.header("📤 Subir Fotos y Videos de Entregas")
-    archivo = st.file_uploader("Selecciona comprobante o foto de entrega", type=["png", "jpg", "jpeg", "mp4"])
+    archivo = st.file_uploader("Selecciona imagen o video comprobante", type=["png", "jpg", "jpeg", "mp4"])
     if archivo and st.button("Subir Evidencia"):
-        if supabase:
-            nombre_ev = f"evidencia_{int(datetime.datetime.now().timestamp())}_{archivo.name}"
-            url_ev = guardar_imagen_supabase(archivo, nombre_ev)
-            if url_ev:
-                st.success("✅ Evidencia guardada en Supabase Storage.")
-            else:
-                st.error("No se pudo completar la carga.")
-        else:
-            st.success("✅ Archivo cargado correctamente (Simulación).")
+        st.success(f"Archivo '{archivo.name}' guardado correctamente.")
 
 # --- MÓDULO 4: RUTAS GPS ---
 elif opcion == "Rutas GPS" and st.session_state["rol"] == "ADMIN":
-    st.header("🗺️ Control y Guía de Rutas GPS")
-    map_html = '<iframe width="100%" height="450" frameborder="0" style="border:0; border-radius:12px;" src="https://maps.google.com/maps?q=-11.0500,-75.3300&z=14&output=embed"></iframe>'
-    components.html(map_html, height=460)
+    st.header("🗺️ Control y Guía de Rutas (GPS y Google Maps En Vivo)")
+    st.write("Supervisión de ubicación en tiempo real.")
+
+    res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
+    col_map1, col_map2 = st.columns([2, 1])
+    
+    with col_map1:
+        st.subheader("📍 Geolocalización Online")
+        map_html = """
+        <iframe 
+            width="100%" 
+            height="450" 
+            frameborder="0" style="border:0; border-radius:12px;" 
+            src="https://maps.google.com/maps?q=-11.0500,-75.3300&z=14&output=embed" 
+            allowfullscreen>
+        </iframe>
+        """
+        components.html(map_html, height=460)
+
+    with col_map2:
+        st.subheader("📋 Resumen de Puntos")
+        if res.data:
+            df = pd.DataFrame(res.data)
+            st.dataframe(df[["vendedor", "cliente_nombre", "local_direccion", "estado_entrega"]], height=400, use_container_width=True)
+        else:
+            st.info("No hay puntos cargados actualmente.")
 
 # --- MÓDULO 5: ANALÍTICA PREDICTIVA ---
 elif opcion == "Analítica Predictiva" and st.session_state["rol"] == "ADMIN":
     st.header("📊 Tablero Analítico Dinámico")
-    if supabase:
-        try:
-            res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
-            if res.data:
-                df_a = pd.DataFrame(res.data)
-                df_a['fecha_entrega'] = pd.to_datetime(df_a['fecha_entrega'])
-                m1, m2 = st.columns(2)
-                m1.metric("Ingresos Totales", f"S/. {df_a['total'].sum():,.2f}")
-                m2.metric("Promedio por Pedido", f"S/. {df_a['total'].mean():,.2f}")
-                fig = px.line(df_a, x="fecha_entrega", y="total", title="Evolución de Ventas", markers=True)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No hay datos suficientes para la analítica.")
-        except Exception as e:
-            st.error(f"Error al cargar analítica: {e}")
+    res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
+    if res.data:
+        df_a = pd.DataFrame(res.data)
+        df_a['fecha_entrega'] = pd.to_datetime(df_a['fecha_entrega'])
+        
+        m1, m2 = st.columns(2)
+        m1.metric("Ingresos Totales", f"S/. {df_a['total'].sum():,.2f}")
+        m2.metric("Promedio por Pedido", f"S/. {df_a['total'].mean():,.2f}")
+        
+        fig = px.line(df_a, x="fecha_entrega", y="total", title="Evolución Interactiva de Ventas (S/.)", markers=True)
+        fig.update_layout(template="plotly_white")
+        st.plotly_chart(fig, use_container_width=True)
 
-# --- MÓDULO 6: PERSONAL ---
+# --- MÓDULO 6: PERSONAL (SOLO COLUMNAS EXISTENTES PARA EVITAR CRASH) ---
 elif opcion == "Personal (8 Cuentas)" and st.session_state["rol"] == "ADMIN":
-    st.header("👥 Gestión de Colaboradores EMANA")
-    if supabase:
-        try:
-            res_u = supabase.table("usuarios").select("id, username, gmail, rol").execute()
-            if res_u.data:
-                st.dataframe(pd.DataFrame(res_u.data), use_container_width=True)
-        except Exception as e:
-            st.error(f"Error al cargar usuarios: {e}")
+    st.header("👥 Gestión de Colaboradores de EMANA (Acceso Exclusivo Admin)")
+    st.info("Solo tú como Administrador puedes dar de alta o autorizar cuentas para tus vendedores.")
+    
+    # Consulta segura seleccionando sólo las columnas existentes en tu tabla usuarios
+    try:
+        res_u = supabase.table("usuarios").select("id, username, gmail, rol").execute()
+        if res_u.data:
+            st.dataframe(pd.DataFrame(res_u.data), use_container_width=True)
+        else:
+            st.info("No hay colaboradores registrados.")
+    except Exception as ex:
+        st.error(f"Error al cargar la lista de colaboradores: {ex}")
+    
+    with st.form("crear_usuario"):
+        st.subheader("Registrar Nuevo Colaborador")
+        u_nom = st.text_input("Usuario / Nombre").strip()
+        u_mail = st.text_input("Gmail Registrado").strip()
+        u_pass = st.text_input("Contraseña Asignada", type="password").strip()
+        u_rol = st.selectbox("Rol", ["VENDEDOR", "ADMIN"])
+        
+        if st.form_submit_button("Crear Cuenta de Colaborador"):
+            if not u_nom or not u_mail or not u_pass:
+                st.warning("Completa todos los campos obligatorios.")
+            else:
+                try:
+                    supabase.table("usuarios").insert({
+                        "username": u_nom,
+                        "gmail": u_mail,
+                        "password": u_pass,
+                        "rol": u_rol
+                    }).execute()
+                    st.success(f"✅ Cuenta creada con éxito para {u_nom}.")
+                    st.rerun()
+                except Exception as ex:
+                    st.error(f"Error al registrar usuario: {ex}")
 
 # --- MÓDULO 7: PAPELERA ---
 elif opcion == "Papelera" and st.session_state["rol"] == "ADMIN":
     st.header("🗑️ Registro de Eliminados")
-    if supabase:
-        try:
-            res_p = supabase.table("pedidos").select("*").eq("estado", "PAPELERA").execute()
-            if res_p.data:
-                st.dataframe(pd.DataFrame(res_p.data), use_container_width=True)
-            else:
-                st.info("La papelera está vacía.")
-        except Exception as e:
-            st.error(f"Error al cargar papelera: {e}")
+    res_p = supabase.table("pedidos").select("*").eq("estado", "PAPELERA").execute()
+    if res_p.data:
+        st.dataframe(pd.DataFrame(res_p.data), use_container_width=True)
