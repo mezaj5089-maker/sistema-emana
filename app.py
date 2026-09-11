@@ -107,6 +107,34 @@ try:
 except Exception:
     st.error("⚠️ Error de conexión a la base de datos Supabase. Verifica tus Secrets.")
 
+# --- FUNCIONES DE PERSISTENCIA DE IMÁGENES EN SUPABASE STORAGE ---
+def guardar_imagen_supabase(file, nombre_destino):
+    try:
+        bytes_data = file.getvalue()
+        # Subir o sobrescribir en el bucket 'catalogo'
+        supabase.storage.from_("catalogo").upload(
+            file=bytes_data, 
+            path=nombre_destino, 
+            file_options={"upsert": "true", "content-type": file.type}
+        )
+        return supabase.storage.from_("catalogo").get_public_url(nombre_destino)
+    except Exception as e:
+        st.error(f"Error al guardar imagen en la nube: {e}")
+        return None
+
+def obtener_url_imagen(nombre_destino):
+    try:
+        url = supabase.storage.from_("catalogo").get_public_url(nombre_destino)
+        return url
+    except Exception:
+        return None
+
+def eliminar_imagen_supabase(nombre_destino):
+    try:
+        supabase.storage.from_("catalogo").remove([nombre_destino])
+    except Exception:
+        pass
+
 # --- ESTADO DE SESIÓN ---
 if "autenticado" not in st.session_state:
     st.session_state["autenticado"] = False
@@ -117,10 +145,13 @@ if "rol" not in st.session_state:
 if "gps_coords" not in st.session_state:
     st.session_state["gps_coords"] = {"lat": -11.0500, "lng": -75.3300}
 
-# Variables de Imágenes Dinámicas del Catálogo
-if "img_625" not in st.session_state: st.session_state["img_625"] = "botella 625 ml transparente.png"
-if "img_85" not in st.session_state: st.session_state["img_85"] = "BT 8.5L.png"
-if "img_20" not in st.session_state: st.session_state["img_20"] = "caja de 20 l.png"
+# Variables de Imágenes Dinámicas del Catálogo (Persistidas en la Nube)
+if "img_625" not in st.session_state: 
+    st.session_state["img_625"] = obtener_url_imagen("img_625.png")
+if "img_85" not in st.session_state: 
+    st.session_state["img_85"] = obtener_url_imagen("img_85.png")
+if "img_20" not in st.session_state: 
+    st.session_state["img_20"] = obtener_url_imagen("img_20.png")
 
 # --- BARRA LATERAL CON LOGO, RELOJ Y GEOLOCALIZACIÓN GPS ---
 with st.sidebar:
@@ -299,23 +330,38 @@ if opcion == "Nuevas Ventas":
             st.info("Como Administrador, puedes modificar, subir o quitar las imágenes de los productos desde cualquier dispositivo.")
             
             up_625 = st.file_uploader("Cambiar / Subir Imagen Botella 625ml", type=["png", "jpg", "jpeg"], key="u625")
-            if up_625: st.session_state["img_625"] = up_625
-            if st.button("Quitar Imagen 625ml"): st.session_state["img_625"] = None
+            if up_625: 
+                url = guardar_imagen_supabase(up_625, "img_625.png")
+                if url: st.session_state["img_625"] = url; st.rerun()
+            if st.button("Quitar Imagen 625ml"): 
+                eliminar_imagen_supabase("img_625.png")
+                st.session_state["img_625"] = None
+                st.rerun()
             
             up_85 = st.file_uploader("Cambiar / Subir Imagen Botella 8.5L", type=["png", "jpg", "jpeg"], key="u85")
-            if up_85: st.session_state["img_85"] = up_85
-            if st.button("Quitar Imagen 8.5L"): st.session_state["img_85"] = None
+            if up_85: 
+                url = guardar_imagen_supabase(up_85, "img_85.png")
+                if url: st.session_state["img_85"] = url; st.rerun()
+            if st.button("Quitar Imagen 8.5L"): 
+                eliminar_imagen_supabase("img_85.png")
+                st.session_state["img_85"] = None
+                st.rerun()
 
             up_20 = st.file_uploader("Cambiar / Subir Imagen Caja 20L", type=["png", "jpg", "jpeg"], key="u20")
-            if up_20: st.session_state["img_20"] = up_20
-            if st.button("Quitar Imagen 20L"): st.session_state["img_20"] = None
+            if up_20: 
+                url = guardar_imagen_supabase(up_20, "img_20.png")
+                if url: st.session_state["img_20"] = url; st.rerun()
+            if st.button("Quitar Imagen 20L"): 
+                eliminar_imagen_supabase("img_20.png")
+                st.session_state["img_20"] = None
+                st.rerun()
 
     p1, p2, p3 = st.columns(3)
     
     # 1. Paquete 625 ml (20 UND)
     with p1:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
-        if st.session_state["img_625"] is not None:
+        if st.session_state.get("img_625"):
             try: st.image(st.session_state["img_625"], use_container_width=True)
             except: st.markdown("🍾 **Paquete 625 ml (20 UND)**")
         else:
@@ -329,7 +375,7 @@ if opcion == "Nuevas Ventas":
     # 2. Botellón 8.5 L
     with p2:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
-        if st.session_state["img_85"] is not None:
+        if st.session_state.get("img_85"):
             try: st.image(st.session_state["img_85"], use_container_width=True)
             except: st.markdown("🪣 **Botella 8.5 L**")
         else:
@@ -343,7 +389,7 @@ if opcion == "Nuevas Ventas":
     # 3. Caja de 20 L
     with p3:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
-        if st.session_state["img_20"] is not None:
+        if st.session_state.get("img_20"):
             try: st.image(st.session_state["img_20"], use_container_width=True)
             except: st.markdown("📦 **Caja 20 L**")
         else:
