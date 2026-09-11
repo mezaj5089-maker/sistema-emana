@@ -155,11 +155,12 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# IMÁGENES POR DEFECTO PARA FALLBACK
+# IMÁGENES POR DEFECTO DESDE TU BUCKET DE SUPABASE
+SUPABASE_URL_BASE = st.secrets["SUPABASE_URL"] if "SUPABASE_URL" in st.secrets else ""
 DEFAULT_IMAGES = {
-    1: "https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=500",
-    2: "https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=500",
-    3: "https://images.unsplash.com/photo-1527100673774-cce25eafaf7f?w=500"
+    1: f"{SUPABASE_URL_BASE}/storage/v1/object/public/catalogo/img_625.png",
+    2: f"{SUPABASE_URL_BASE}/storage/v1/object/public/catalogo/img_85.png",
+    3: f"{SUPABASE_URL_BASE}/storage/v1/object/public/catalogo/img_20.png"
 }
 
 # --- FUNCIONES AUXILIARES DE IMAGEN Y BASE DE DATOS ---
@@ -170,7 +171,6 @@ def guardar_imagen_supabase(uploaded_file, nombre_destino):
         file_bytes = uploaded_file.getvalue()
         mime_type = uploaded_file.type or "image/png"
         
-        # Subir bytes a bucket 'catalogo'
         supabase.storage.from_("catalogo").upload(
             path=nombre_destino,
             file=file_bytes,
@@ -189,10 +189,12 @@ def obtener_productos():
     ]
     if supabase:
         try:
-            res = supabase.table("productos").select("*").execute()
+            res = supabase.table("products").select("*").execute()
             if res.data:
                 for p in res.data:
-                    if not p.get("imagen"):
+                    if not p.get("imagen") and p.get("imagen_url"):
+                        p["imagen"] = p["imagen_url"]
+                    elif not p.get("imagen"):
                         p["imagen"] = DEFAULT_IMAGES.get(p["id"], DEFAULT_IMAGES[1])
                 return res.data
         except Exception:
@@ -207,7 +209,7 @@ def actualizar_imagen_producto(prod_id, url_o_file):
     
     if url_final and supabase:
         try:
-            supabase.table("productos").update({"imagen": url_final}).eq("id", prod_id).execute()
+            supabase.table("products").update({"imagen": url_final}).eq("id", prod_id).execute()
             st.success("✅ Imagen actualizada en la base de datos.")
             st.rerun()
         except Exception as e:
@@ -498,7 +500,7 @@ if opcion == "Nuevas Ventas":
                         
                         if supabase:
                             try:
-                                supabase.table("productos").insert({
+                                supabase.table("products").insert({
                                     "nombre": n_prod,
                                     "precio_und": p_und,
                                     "precio_mayor": p_mayor,
