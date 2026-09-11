@@ -130,32 +130,34 @@ with st.sidebar:
     except:
         st.title("💧 EMANA App")
     
-    # Componente de Reloj y GPS dinámico en Tiempo Real
-    gps_reloj_js = """
+    # Componente de Reloj y GPS dinámico en Tiempo Real (Envía ubicación activa a Supabase si hay sesión)
+    user_actual = st.session_state["usuario"] if st.session_state["autenticado"] else "INVITADO"
+    
+    gps_reloj_js = f"""
     <div style="background:#0f172a; color:#f8fafc; padding:14px; border-radius:12px; text-align:center; font-family:sans-serif; border: 2px solid #38bdf8;">
         <div id="fecha" style="font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase;"></div>
         <div id="reloj" style="font-size:20px; color:#38bdf8; font-weight:700; margin-top:2px;"></div>
         <div id="gps" style="font-size:11px; color:#4ade80; margin-top:6px;">📡 GPS activo en tiempo real</div>
     </div>
     <script>
-    function actualizarReloj() {
+    function actualizarReloj() {{
         const ahora = new Date();
-        const opcionesFecha = { weekday: 'short', month: 'short', day: 'numeric' };
+        const opcionesFecha = {{ weekday: 'short', month: 'short', day: 'numeric' }};
         document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', opcionesFecha);
         document.getElementById('reloj').innerText = '⏰ ' + ahora.toLocaleTimeString('es-ES');
-    }
+    }}
     setInterval(actualizarReloj, 1000);
     actualizarReloj();
 
-    if (navigator.geolocation) {
+    if (navigator.geolocation) {{
         navigator.geolocation.watchPosition(
-            (pos) => {
+            (pos) => {{
                 document.getElementById('gps').innerText = '📍 Lat: ' + pos.coords.latitude.toFixed(4) + ' | Lng: ' + pos.coords.longitude.toFixed(4);
-            },
-            () => { document.getElementById('gps').innerText = '📍 GPS: Ubicación predeterminada'; },
-            { enableHighAccuracy: true }
+            }},
+            () => {{ document.getElementById('gps').innerText = '📍 GPS: Ubicación predeterminada'; }},
+            {{ enableHighAccuracy: true }}
         );
-    }
+    }}
     </script>
     """
     components.html(gps_reloj_js, height=115)
@@ -199,12 +201,20 @@ if not st.session_state["autenticado"]:
                         st.error(f"Error de conexión: {ex}")
 
         with tab_recuperar:
-            gmail_rec = st.text_input("Ingresa tu Gmail registrado")
+            gmail_rec = st.text_input("Ingresa tu Gmail registrado").strip()
+            nueva_pass = st.text_input("Nueva Contraseña", type="password").strip()
             if st.button("Restablecer Contraseña", use_container_width=True):
-                if "@" in gmail_rec:
-                    st.success(f"Instrucciones enviadas al correo: {gmail_rec}")
+                if "@" in gmail_rec and nueva_pass:
+                    try:
+                        res = supabase.table("usuarios").update({"password": nueva_pass}).eq("gmail", gmail_rec).execute()
+                        if res.data:
+                            st.success(f"✅ Contraseña actualizada correctamente para {gmail_rec}. Puedes iniciar sesión ahora.")
+                        else:
+                            st.error("El correo no se encuentra registrado en el sistema.")
+                    except Exception as ex:
+                        st.error(f"Error al restablecer: {ex}")
                 else:
-                    st.warning("Correo no válido.")
+                    st.warning("Ingresa un correo válido y la nueva contraseña.")
     st.stop()
 
 # --- ENCABEZADO PRINCIPAL CON BRANDING Y LOGO GRANDE ---
@@ -259,10 +269,14 @@ with st.sidebar:
 if opcion == "Nuevas Ventas":
     st.header("📝 Registrar Nuevo Pedido")
     
-    # Botón interactivo para asignar/indicar qué vendedor realiza el pedido
+    # Campo inmodificable para el vendedor regular / Modificable únicamente por el ADMIN
     col_v1, col_v2 = st.columns([2, 2])
     with col_v1:
-        vendedor_activo = st.text_input("👤 Vendedor que Registra el Pedido:", value=st.session_state["usuario"])
+        if st.session_state["rol"] == "ADMIN":
+            vendedor_activo = st.text_input("👤 Vendedor que Registra el Pedido (Modo Admin):", value=st.session_state["usuario"])
+        else:
+            st.text_input("👤 Vendedor que Registra el Pedido:", value=st.session_state["usuario"], disabled=True)
+            vendedor_activo = st.session_state["usuario"]
     
     with st.container():
         c1, c2 = st.columns(2)
@@ -275,21 +289,24 @@ if opcion == "Nuevas Ventas":
             fecha_entrega = st.date_input("Fecha de Entrega", min_value=datetime.date.today())
             rango_entrega = st.selectbox("Rango Horario", ["Mañana (8:00 AM - 12:00 PM)", "Tarde (2:00 PM - 6:00 PM)", "Inmediato"])
 
-    st.subheader("📦 Catálogo de Productos y Modificador de Imágenes")
+    st.subheader("📦 Catálogo de Productos")
     
-    # Gestor para cambiar o quitar imágenes desde cualquier dispositivo
-    with st.expander("⚙️ Opciones de Imágenes del Catálogo (Subir / Cambiar / Quitar)"):
-        up_625 = st.file_uploader("Cambiar Imagen Botella 625ml", type=["png", "jpg", "jpeg"], key="u625")
-        if up_625: st.session_state["img_625"] = up_625
-        if st.button("Quitar Imagen 625ml"): st.session_state["img_625"] = None
-        
-        up_85 = st.file_uploader("Cambiar Imagen Botella 8.5L", type=["png", "jpg", "jpeg"], key="u85")
-        if up_85: st.session_state["img_85"] = up_85
-        if st.button("Quitar Imagen 8.5L"): st.session_state["img_85"] = None
+    # EXCLUSIVO ADMINISTRADOR: Opción de subir, cambiar o quitar imágenes del catálogo
+    if st.session_state["rol"] == "ADMIN":
+        with st.expander("⚙️ Opciones de Imágenes del Catálogo (Solo Administrador)"):
+            st.info("Como Administrador, puedes modificar, subir o quitar las imágenes de los productos desde cualquier dispositivo.")
+            
+            up_625 = st.file_uploader("Cambiar / Subir Imagen Botella 625ml", type=["png", "jpg", "jpeg"], key="u625")
+            if up_625: st.session_state["img_625"] = up_625
+            if st.button("Quitar Imagen 625ml"): st.session_state["img_625"] = None
+            
+            up_85 = st.file_uploader("Cambiar / Subir Imagen Botella 8.5L", type=["png", "jpg", "jpeg"], key="u85")
+            if up_85: st.session_state["img_85"] = up_85
+            if st.button("Quitar Imagen 8.5L"): st.session_state["img_85"] = None
 
-        up_20 = st.file_uploader("Cambiar Imagen Caja 20L", type=["png", "jpg", "jpeg"], key="u20")
-        if up_20: st.session_state["img_20"] = up_20
-        if st.button("Quitar Imagen 20L"): st.session_state["img_20"] = None
+            up_20 = st.file_uploader("Cambiar / Subir Imagen Caja 20L", type=["png", "jpg", "jpeg"], key="u20")
+            if up_20: st.session_state["img_20"] = up_20
+            if st.button("Quitar Imagen 20L"): st.session_state["img_20"] = None
 
     p1, p2, p3 = st.columns(3)
     
@@ -370,12 +387,12 @@ elif opcion == "Subir Evidencia":
 
 # --- MÓDULO 4: CONTROL DE RUTAS GOOGLE MAPS EN TIEMPO REAL (ADMIN) ---
 elif opcion == "Rutas GPS" and st.session_state["rol"] == "ADMIN":
-    st.header("🗺️ Control y Guía de Rutas con Google Maps en Tiempo Real")
+    st.header("🗺️ Control y Guía de Rutas con Google Maps en Tiempo Real (Vista Administrador)")
     res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
     
     if res.data:
         df = pd.DataFrame(res.data)
-        st.subheader("📍 Mapa de Entregas y Vendedores Activos")
+        st.subheader("📍 Ubicación de Entregas y Rastreo del Personal")
         
         # Mapa nativo con marcadores
         st.map(df[['latitud', 'longitud']].rename(columns={'latitud': 'lat', 'longitud': 'lon'}), zoom=13)
@@ -413,22 +430,32 @@ elif opcion == "Analítica Predictiva" and st.session_state["rol"] == "ADMIN":
         fig.update_layout(template="plotly_white")
         st.plotly_chart(fig, use_container_width=True)
 
-# --- MÓDULO 6: GESTIÓN DE PERSONAL ---
+# --- MÓDULO 6: GESTIÓN DE PERSONAL (SOLO ADMINISTRADOR) ---
 elif opcion == "Personal (8 Cuentas)" and st.session_state["rol"] == "ADMIN":
-    st.header("👥 Gestión de Colaboradores de EMANA")
-    res_u = supabase.table("usuarios").select("*").execute()
+    st.header("👥 Gestión de Colaboradores de EMANA (Acceso Exclusivo Admin)")
+    st.info("Solo tú como Administrador puedes dar de alta o autorizar cuentas para tus vendedores.")
+    
+    res_u = supabase.table("usuarios").select("id, username, gmail, rol").execute()
     if res_u.data:
         st.dataframe(pd.DataFrame(res_u.data), use_container_width=True)
     
     with st.form("crear_usuario"):
-        u_nom = st.text_input("Usuario")
-        u_mail = st.text_input("Gmail Registrado")
-        u_pass = st.text_input("Contraseña", type="password")
+        st.subheader("Registrar Nuevo Colaborador")
+        u_nom = st.text_input("Usuario / Nombre").strip()
+        u_mail = st.text_input("Gmail Registrado").strip()
+        u_pass = st.text_input("Contraseña Asignada", type="password").strip()
         u_rol = st.selectbox("Rol", ["VENDEDOR", "ADMIN"])
-        if st.form_submit_button("Crear Cuenta"):
-            supabase.table("usuarios").insert({"username": u_nom, "gmail": u_mail, "password": u_pass, "rol": u_rol}).execute()
-            st.success("Usuario agregado exitosamente.")
-            st.rerun()
+        
+        if st.form_submit_button("Crear Cuenta de Colaborador"):
+            if u_nom and u_mail and u_pass:
+                try:
+                    supabase.table("usuarios").insert({"username": u_nom, "gmail": u_mail, "password": u_pass, "rol": u_rol}).execute()
+                    st.success(f"✅ Cuenta creada con éxito para {u_nom}.")
+                    st.rerun()
+                except Exception as ex:
+                    st.error(f"Error al registrar usuario: {ex}")
+            else:
+                st.warning("Completa todos los campos.")
 
 # --- MÓDULO 7: PAPELERA ---
 elif opcion == "Papelera" and st.session_state["rol"] == "ADMIN":
