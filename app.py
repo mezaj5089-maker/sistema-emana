@@ -519,32 +519,48 @@ elif opcion == "Analítica Predictiva" and st.session_state["rol"] == "ADMIN":
         fig.update_layout(template="plotly_white")
         st.plotly_chart(fig, use_container_width=True)
 
-# --- MÓDULO 6: GESTIÓN DE PERSONAL (SOLO ADMINISTRADOR) ---
+# --- MÓDULO 6: GESTIÓN DE PERSONAL (SOLO ADMINISTRADOR - CON VALIDACIÓN DNI/RUC) ---
 elif opcion == "Personal (8 Cuentas)" and st.session_state["rol"] == "ADMIN":
     st.header("👥 Gestión de Colaboradores de EMANA (Acceso Exclusivo Admin)")
     st.info("Solo tú como Administrador puedes dar de alta o autorizar cuentas para tus vendedores.")
     
-    res_u = supabase.table("usuarios").select("id, username, gmail, rol").execute()
+    res_u = supabase.table("usuarios").select("id, username, gmail, rol, documento_tipo, documento_num").execute()
     if res_u.data:
         st.dataframe(pd.DataFrame(res_u.data), use_container_width=True)
     
     with st.form("crear_usuario"):
         st.subheader("Registrar Nuevo Colaborador")
+        
+        doc_tipo = st.selectbox("Tipo de Documento", ["DNI", "RUC"])
+        doc_num = st.text_input("Número de Documento (DNI: 8 dígitos / RUC: 11 dígitos)").strip()
+        
         u_nom = st.text_input("Usuario / Nombre").strip()
         u_mail = st.text_input("Gmail Registrado").strip()
         u_pass = st.text_input("Contraseña Asignada", type="password").strip()
         u_rol = st.selectbox("Rol", ["VENDEDOR", "ADMIN"])
         
         if st.form_submit_button("Crear Cuenta de Colaborador"):
-            if u_nom and u_mail and u_pass:
+            # Validaciones para DNI y RUC
+            if doc_tipo == "DNI" and (len(doc_num) != 8 or not doc_num.isdigit()):
+                st.error("❌ El DNI debe contener exactamente 8 dígitos numéricos.")
+            elif doc_tipo == "RUC" and (len(doc_num) != 11 or not doc_num.isdigit()):
+                st.error("❌ El RUC debe contener exactamente 11 dígitos numéricos.")
+            elif not u_nom or not u_mail or not u_pass:
+                st.warning("Completa todos los campos.")
+            else:
                 try:
-                    supabase.table("usuarios").insert({"username": u_nom, "gmail": u_mail, "password": u_pass, "rol": u_rol}).execute()
+                    supabase.table("usuarios").insert({
+                        "username": u_nom,
+                        "gmail": u_mail,
+                        "password": u_pass,
+                        "rol": u_rol,
+                        "documento_tipo": doc_tipo,
+                        "documento_num": doc_num
+                    }).execute()
                     st.success(f"✅ Cuenta creada con éxito para {u_nom}.")
                     st.rerun()
                 except Exception as ex:
                     st.error(f"Error al registrar usuario: {ex}")
-            else:
-                st.warning("Completa todos los campos.")
 
 # --- MÓDULO 7: PAPELERA ---
 elif opcion == "Papelera" and st.session_state["rol"] == "ADMIN":
