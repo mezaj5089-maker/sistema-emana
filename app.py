@@ -111,7 +111,6 @@ except Exception:
 def guardar_imagen_supabase(file, nombre_destino):
     try:
         bytes_data = file.getvalue()
-        # Subir o sobrescribir en el bucket 'catalogo'
         supabase.storage.from_("catalogo").upload(
             file=bytes_data, 
             path=nombre_destino, 
@@ -145,7 +144,7 @@ if "rol" not in st.session_state:
 if "gps_coords" not in st.session_state:
     st.session_state["gps_coords"] = {"lat": -11.0500, "lng": -75.3300}
 
-# Variables de Imágenes Dinámicas del Catálogo (Persistidas en la Nube)
+# Variables de Imágenes Dinámicas del Catálogo
 if "img_625" not in st.session_state: 
     st.session_state["img_625"] = obtener_url_imagen("img_625.png")
 if "img_85" not in st.session_state: 
@@ -153,7 +152,7 @@ if "img_85" not in st.session_state:
 if "img_20" not in st.session_state: 
     st.session_state["img_20"] = obtener_url_imagen("img_20.png")
 
-# --- BARRA LATERAL CON LOGO, RELOJ Y GEOLOCALIZACIÓN GPS ---
+# --- BARRA LATERAL CON LOGO, RELOJ Y GEOLOCALIZACIÓN GPS EN TIEMPO REAL ---
 with st.sidebar:
     try:
         st.image("LOGO agua Emana VECTOR 01.png", width=200)
@@ -162,6 +161,7 @@ with st.sidebar:
     
     user_actual = st.session_state["usuario"] if st.session_state["autenticado"] else "INVITADO"
     
+    # Envío automático de coordenadas GPS del usuario/vendedor a Supabase
     gps_reloj_js = f"""
     <div style="background:#0f172a; color:#f8fafc; padding:14px; border-radius:12px; text-align:center; font-family:sans-serif; border: 2px solid #38bdf8;">
         <div id="fecha" style="font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase;"></div>
@@ -246,7 +246,7 @@ if not st.session_state["autenticado"]:
                     st.warning("Ingresa un correo válido y la nueva contraseña.")
     st.stop()
 
-# --- ENCABEZADO PRINCIPAL CON BRANDING Y LOGO GRANDE ---
+# --- ENCABEZADO PRINCIPAL ---
 col_head_img, col_head_txt = st.columns([1, 4])
 with col_head_img:
     try:
@@ -358,7 +358,7 @@ if opcion == "Nuevas Ventas":
 
     p1, p2, p3 = st.columns(3)
     
-    # 1. Paquete 625 ml (20 UND)
+    # 1. Paquete 625 ml
     with p1:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
         if st.session_state.get("img_625"):
@@ -396,22 +396,20 @@ if opcion == "Nuevas Ventas":
             st.markdown("📦 **Caja 20 L** *(Sin imagen)*")
             
         cant_20 = st.number_input("Cantidad Cajas 20L", min_value=0, value=0)
-        precio_sug_20 = 18.00 if cant_20 >= 5 else 20.00  # Ajustable por el usuario
+        precio_sug_20 = 18.00 if cant_20 >= 5 else 20.00
         precio_final_20 = st.number_input("Precio Unitario Caja 20L (S/.)", value=precio_sug_20, step=0.50)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Cálculo total automático basándose en precios modificados
     subtotal_calc = (cant_625 * precio_final_625) + (cant_85 * precio_final_85) + (cant_20 * precio_final_20)
     total = st.number_input("Monto Total Calculado (S/.)", value=float(subtotal_calc), min_value=0.0, step=0.50)
 
     st.markdown("---")
     
-    # Proceso de Guardado con Modal de Confirmación sin obligar llenar todos los campos
     if st.button("💾 Guardar Pedido", type="primary", use_container_width=True):
         st.session_state["mostrar_confirmacion"] = True
 
     if st.session_state.get("mostrar_confirmacion", False):
-        st.warning("❓ **¿Estas seguro de guardar la venta?** Verifica los datos antes de continuar.")
+        st.warning("❓ **¿Estás seguro de guardar la venta?** Verifica los datos antes de continuar.")
         col_si, col_no = st.columns(2)
         
         with col_si:
@@ -442,15 +440,20 @@ if opcion == "Nuevas Ventas":
                 st.session_state["mostrar_confirmacion"] = False
                 st.info("Puedes corregir los datos del formulario.")
 
-# --- MÓDULO 2: CONSULTAR MIS PEDIDOS & RESPALDO ---
+# --- MÓDULO 2: MIS PEDIDOS (CORREGIDO PARA MOSTRAR TODOS LOS PEDIDOS AL ADMIN) ---
 elif opcion == "Mis Pedidos":
     st.header("📋 Mis Pedidos Registrados")
-    res = supabase.table("pedidos").select("*").eq("vendedor", st.session_state["usuario"]).eq("estado", "ACTIVO").execute()
+    
+    # Si es ADMIN muestra todos los pedidos; si es VENDEDOR solo muestra los suyos
+    if st.session_state["rol"] == "ADMIN":
+        res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
+    else:
+        res = supabase.table("pedidos").select("*").eq("vendedor", st.session_state["usuario"]).eq("estado", "ACTIVO").execute()
+        
     if res.data:
         df_pedidos = pd.DataFrame(res.data)
         st.dataframe(df_pedidos, use_container_width=True)
         
-        # Opción de Respaldo para Google Drive
         csv_data = df_pedidos.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="📁 Descargar Respaldo CSV (Para Google Drive)",
@@ -459,7 +462,7 @@ elif opcion == "Mis Pedidos":
             mime="text/csv"
         )
     else:
-        st.info("No cuentas con pedidos registrados actualmente.")
+        st.info("No cuentan con pedidos registrados actualmente.")
 
 # --- MÓDULO 3: EVIDENCIAS ---
 elif opcion == "Subir Evidencia":
@@ -468,14 +471,37 @@ elif opcion == "Subir Evidencia":
     if archivo and st.button("Subir Evidencia"):
         st.success(f"Archivo '{archivo.name}' guardado correctamente.")
 
-# --- MÓDULO 4: CONTROL DE RUTAS GOOGLE MAPS EN TIEMPO REAL (ADMIN) ---
+# --- MÓDULO 4: CONTROL Y GUÍA DE RUTAS CON GOOGLE MAPS / GPS EN VIVO (ADMIN) ---
 elif opcion == "Rutas GPS" and st.session_state["rol"] == "ADMIN":
-    st.header("🗺️ Control y Guía de Rutas (Vista Administrador)")
+    st.header("🗺️ Control y Guía de Rutas (GPS y Google Maps En Vivo)")
+    st.write("Supervisión de ubicación en tiempo real de los vendedores en campo y rutas de ventas.")
+
     res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
     
-    if res.data:
-        df = pd.DataFrame(res.data)
-        st.dataframe(df, use_container_width=True)
+    # Visualización con Google Maps integrado vía iframe
+    col_map1, col_map2 = st.columns([2, 1])
+    
+    with col_map1:
+        st.subheader("📍 Geolocalización Online y Monitoreo Campo")
+        # Visualizador interactivo de Google Maps enfocado en la zona de trabajo
+        map_html = """
+        <iframe 
+            width="100%" 
+            height="450" 
+            frameborder="0" style="border:0; border-radius:12px;" 
+            src="https://maps.google.com/maps?q=-11.0500,-75.3300&z=14&output=embed" 
+            allowfullscreen>
+        </iframe>
+        """
+        components.html(map_html, height=460)
+
+    with col_map2:
+        st.subheader("📋 Resumen de Puntos")
+        if res.data:
+            df = pd.DataFrame(res.data)
+            st.dataframe(df[["vendedor", "cliente_nombre", "local_direccion", "estado_entrega"]], height=400, use_container_width=True)
+        else:
+            st.info("No hay puntos cargados actualmente.")
 
 # --- MÓDULO 5: ANALÍTICA PREDICTIVA Y GRÁFICOS DASHBOARD ---
 elif opcion == "Analítica Predictiva" and st.session_state["rol"] == "ADMIN":
