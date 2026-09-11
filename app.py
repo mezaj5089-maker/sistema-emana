@@ -179,6 +179,20 @@ def guardar_imagen_supabase(file, nombre_destino):
         st.error(f"Error al guardar imagen en la nube: {e}")
         return None
 
+def guardar_video_supabase(file, nombre_destino):
+    """Sube el video al bucket 'catalogo' en Supabase y devuelve su URL pública."""
+    try:
+        bytes_data = file.getvalue()
+        supabase.storage.from_("catalogo").upload(
+            file=bytes_data,
+            path=nombre_destino,
+            file_options={"upsert": "true", "content-type": file.type}
+        )
+        return supabase.storage.from_("catalogo").get_public_url(nombre_destino)
+    except Exception as e:
+        st.error(f"Error al subir el video a Supabase: {e}")
+        return None
+
 def obtener_productos():
     try:
         res = supabase.table("productos").select("*").execute()
@@ -556,29 +570,40 @@ if opcion == "Nuevas Ventas":
     with col_vid_int:
         st.subheader("🎬 Spot Promocional")
         st.markdown('<div class="video-container">', unsafe_allow_html=True)
-        
-        # Reproducción de Video
-        if isinstance(st.session_state["promo_video_url"], str):
+
+        # Muestra el video directamente desde la URL pública guardada
+        if st.session_state.get("promo_video_url"):
             st.video(st.session_state["promo_video_url"])
         else:
-            st.video(st.session_state["promo_video_url"])
+            st.info("No hay ningún video promocional activo.")
 
-        # Módulo de Subida/Edición de Video para Admin
-        if st.session_state["rol"] == "ADMIN":
+        # Módulo de administración exclusivo para Admin
+        if st.session_state.get("rol") == "ADMIN":
             st.divider()
             st.caption("⚙️ **Configuración de Video (Solo Admin)**")
-            
-            v_input = st.text_input("Enlace (YouTube / URL MP4)", value=st.session_state["promo_video_url"] if isinstance(st.session_state["promo_video_url"], str) else "")
+
+            # Opción A: Actualizar mediante enlace (YouTube o MP4 directo)
+            v_input = st.text_input(
+                "Enlace (YouTube / URL MP4)",
+                value=st.session_state.get("promo_video_url", "")
+            )
             if st.button("Actualizar Enlace"):
                 st.session_state["promo_video_url"] = v_input
-                st.success("Enlace actualizado")
+                st.success("✅ Enlace actualizado correctamente.")
                 st.rerun()
-                
-            v_file = st.file_uploader("O subir video (9:16 o 16:9)", type=["mp4", "mov"])
-            if v_file:
-                st.session_state["promo_video_url"] = v_file
-                st.success("Video cargado correctamente.")
-                st.rerun()
+
+            # Opción B: Subir desde la PC directamente a Supabase
+            v_file = st.file_uploader("O subir video desde la PC (MP4 / MOV)", type=["mp4", "mov"])
+            if v_file is not None:
+                if st.button("🚀 Subir Video a Supabase"):
+                    with st.spinner("Subiendo video al bucket de Supabase..."):
+                        nombre_archivo = f"video_promo_{int(datetime.datetime.now().timestamp())}.mp4"
+                        url_publica = guardar_video_supabase(v_file, nombre_archivo)
+
+                        if url_publica:
+                            st.session_state["promo_video_url"] = url_publica
+                            st.success("✅ Video subido a Supabase y actualizado en el sistema.")
+                            st.rerun()
 
         st.markdown('</div>', unsafe_allow_html=True)
 
