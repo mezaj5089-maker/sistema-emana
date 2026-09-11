@@ -14,64 +14,115 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ESTILOS CSS3 AVANZADOS (AZUL CLARO & BORDES VIBRANTES) ---
+# --- ESTILOS CSS3 AVANZADOS (MEJORADO: AZUL VIBRANTE, GLASSMORPHISM Y BOTÓN WHATSAPP) ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
     
-    /* Fondo Azul Claro Armónico */
+    /* Fondo Azul Claro Armónico con degrada brillante */
     .stApp {
         background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%);
     }
     
-    /* Header principal con Glassmorphism y Logo Destacado */
+    /* Header principal con Glassmorphism y Glow */
     .header-banner {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-        padding: 20px 30px;
-        border-radius: 18px;
+        padding: 22px 32px;
+        border-radius: 20px;
         color: white;
-        box-shadow: 0 10px 20px -3px rgba(14, 165, 233, 0.4);
+        box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.45);
         margin-bottom: 25px;
         display: flex;
         align-items: center;
         gap: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* Tarjetas de producto interactivas */
+    /* Tarjetas de producto interactivas estilo EMANA */
     .product-card {
         background: #ffffff;
-        border-radius: 16px;
-        padding: 20px;
+        border-radius: 18px;
+        padding: 18px;
         border: 2px solid #38bdf8;
-        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
-        transition: all 0.3s ease-in-out;
+        box-shadow: 0 6px 16px rgba(14, 165, 233, 0.15);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         text-align: center;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
     .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 25px rgba(14, 165, 233, 0.3);
+        transform: translateY(-6px);
+        box-shadow: 0 18px 30px rgba(14, 165, 233, 0.35);
         border-color: #0284c7;
     }
     
+    .price-badge {
+        background: #e0f2fe;
+        color: #0369a1;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        margin: 4px 0;
+        border: 1px solid #7dd3fc;
+    }
+
+    .price-badge-wholesale {
+        background: #dcfce7;
+        color: #15803d;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 14px;
+        margin: 4px 0;
+        border: 1px solid #86efac;
+    }
+
     /* Bordes y Botones Neón Vibrantes */
     .stButton > button {
         border-radius: 12px !important;
         font-weight: 700 !important;
         padding: 0.6rem 1.8rem !important;
         border: 2px solid #0ea5e9 !important;
-        background: linear-gradient(135deg, #0284c7 0%, #0284c7 100%) !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: white !important;
-        box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3) !important;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35) !important;
         transition: all 0.2s ease-in-out !important;
     }
     .stButton > button:hover {
         transform: scale(1.03) !important;
         border-color: #38bdf8 !important;
-        box-shadow: 0 6px 15px rgba(56, 189, 248, 0.5) !important;
+        box-shadow: 0 6px 18px rgba(56, 189, 248, 0.55) !important;
+    }
+
+    /* Botón flotante directo de WhatsApp */
+    .btn-whatsapp {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background-color: #25D366;
+        color: white !important;
+        font-weight: 700;
+        padding: 12px 20px;
+        border-radius: 12px;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+        transition: all 0.3s ease;
+        width: 100%;
+        text-align: center;
+        margin-top: 10px;
+    }
+    .btn-whatsapp:hover {
+        background-color: #1da851;
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6);
     }
     
     /* Inputs con bordes brillantes activos */
@@ -82,15 +133,15 @@ st.markdown("""
     }
     div[data-baseweb="input"] > div:focus-within {
         border-color: #0284c7 !important;
-        box-shadow: 0 0 10px rgba(2, 132, 199, 0.4) !important;
+        box-shadow: 0 0 12px rgba(2, 132, 199, 0.4) !important;
     }
     
     /* Estilos de tabla de datos */
     div[data-testid="stDataFrame"] {
-        border-radius: 12px;
+        border-radius: 14px;
         overflow: hidden;
         border: 2px solid #7dd3fc;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -107,7 +158,7 @@ try:
 except Exception:
     st.error("⚠️ Error de conexión a la base de datos Supabase. Verifica tus Secrets.")
 
-# --- FUNCIONES DE PERSISTENCIA DE IMÁGENES EN SUPABASE STORAGE ---
+# --- FUNCIONES DE PERSISTENCIA DE IMÁGENES Y PRODUCTOS ---
 def guardar_imagen_supabase(file, nombre_destino):
     try:
         bytes_data = file.getvalue()
@@ -121,18 +172,17 @@ def guardar_imagen_supabase(file, nombre_destino):
         st.error(f"Error al guardar imagen en la nube: {e}")
         return None
 
-def obtener_url_imagen(nombre_destino):
+def obtener_productos():
     try:
-        url = supabase.storage.from_("catalogo").get_public_url(nombre_destino)
-        return url
+        res = supabase.table("productos").select("*").execute()
+        return res.data if res.data else []
     except Exception:
-        return None
-
-def eliminar_imagen_supabase(nombre_destino):
-    try:
-        supabase.storage.from_("catalogo").remove([nombre_destino])
-    except Exception:
-        pass
+        # Productos base por defecto en caso de no existir la tabla aún
+        return [
+            {"id": 1, "nombre": "Paquete 625 ml (20 UND)", "precio_und": 12.50, "precio_mayor": 10.00, "min_mayor": 5, "imagen": None},
+            {"id": 2, "nombre": "Botella 8.5 L", "precio_und": 9.00, "precio_mayor": 7.00, "min_mayor": 10, "imagen": None},
+            {"id": 3, "nombre": "Caja 20 L", "precio_und": 20.00, "precio_mayor": 18.00, "min_mayor": 5, "imagen": None}
+        ]
 
 # --- ESTADO DE SESIÓN ---
 if "autenticado" not in st.session_state:
@@ -141,27 +191,30 @@ if "usuario" not in st.session_state:
     st.session_state["usuario"] = None
 if "rol" not in st.session_state:
     st.session_state["rol"] = None
+if "modo_cliente" not in st.session_state:
+    st.session_state["modo_cliente"] = True
 if "gps_coords" not in st.session_state:
     st.session_state["gps_coords"] = {"lat": -11.0500, "lng": -75.3300}
 
-# Variables de Imágenes Dinámicas del Catálogo
-if "img_625" not in st.session_state: 
-    st.session_state["img_625"] = obtener_url_imagen("img_625.png")
-if "img_85" not in st.session_state: 
-    st.session_state["img_85"] = obtener_url_imagen("img_85.png")
-if "img_20" not in st.session_state: 
-    st.session_state["img_20"] = obtener_url_imagen("img_20.png")
+# ENLACE WHATSAPP VINCULADO
+WA_LINK = "https://wa.me/qr/ZEJEN3EUZZQRF1"
 
-# --- BARRA LATERAL CON LOGO, RELOJ Y GEOLOCALIZACIÓN GPS EN TIEMPO REAL ---
+# --- BARRA LATERAL CON LOGO, RELOJ, GPS Y WHATSAPP ---
 with st.sidebar:
     try:
         st.image("LOGO agua Emana VECTOR 01.png", width=200)
     except:
         st.title("💧 EMANA App")
     
-    user_actual = st.session_state["usuario"] if st.session_state["autenticado"] else "INVITADO"
-    
-    # Envío automático de coordenadas GPS del usuario/vendedor a Supabase
+    # Botón Flotante para contacto directo por WhatsApp
+    st.markdown(f'''
+        <a href="{WA_LINK}" target="_blank" class="btn-whatsapp">
+            📱 Consultar por WhatsApp
+        </a>
+    ''', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # GPS y Reloj en Vivo
     gps_reloj_js = f"""
     <div style="background:#0f172a; color:#f8fafc; padding:14px; border-radius:12px; text-align:center; font-family:sans-serif; border: 2px solid #38bdf8;">
         <div id="fecha" style="font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase;"></div>
@@ -192,16 +245,74 @@ with st.sidebar:
     components.html(gps_reloj_js, height=115)
     st.markdown("---")
 
-# --- LOGIN & RECUPERACIÓN ---
-if not st.session_state["autenticado"]:
+    # Selección de Vista (Cliente / Personal)
+    if not st.session_state["autenticado"]:
+        st.info("💡 Estás en el Catálogo Público.")
+        if st.button("🔑 Acceso Personal / Ventas"):
+            st.session_state["modo_cliente"] = False
+            st.rerun()
+
+# --- INTERFAZ PÚBLICA / VISTA CLIENTE (SOLO VISUALIZACIÓN) ---
+if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
+    col_head_img, col_head_txt = st.columns([1, 4])
+    with col_head_img:
+        try: st.image("LOGO agua Emana VECTOR 01.png", width=140)
+        except: st.write("💧")
+    with col_head_txt:
+        st.markdown("""
+            <div class="header-banner">
+                <div>
+                    <h1 style="margin:0; font-weight:800; font-size: 32px;">Distribuidora EMANA</h1>
+                    <p style="margin:0; opacity:0.95; font-size: 18px; font-weight: 600;">✨ Vitalidad vida sana — Catálogo Oficial</p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("### 📦 Nuestros Productos y Precios")
+    st.write("Explora nuestro catálogo. Si deseas realizar un pedido, comunícate directamente con nosotros por WhatsApp.")
+    
+    prods = obtener_productos()
+    
+    if prods:
+        cols = st.columns(3)
+        for idx, p in enumerate(prods):
+            with cols[idx % 3]:
+                st.markdown('<div class="product-card">', unsafe_allow_html=True)
+                if p.get("imagen"):
+                    st.image(p["imagen"], use_container_width=True)
+                else:
+                    st.markdown("💧 **Agua Mineral EMANA**")
+                
+                st.markdown(f"#### {p['nombre']}")
+                st.markdown(f'<div class="price-badge">Precio Unidad: S/. {float(p["precio_und"]):,.2f}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="price-badge-wholesale">Precio Por Mayor: S/. {float(p["precio_mayor"]):,.2f}<br><small>(A partir de {p["min_mayor"]} und)</small></div>', unsafe_allow_html=True)
+                
+                st.markdown(f'''
+                    <a href="{WA_LINK}" target="_blank" class="btn-whatsapp" style="font-size: 12px; padding: 8px 10px;">
+                        📲 Pedir este producto
+                    </a>
+                ''', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+    else:
+        st.info("Cargando catálogo de productos...")
+
+    st.stop()
+
+# --- LOGIN & RECUPERACIÓN (SI NO ES MODO CLIENTE) ---
+if not st.session_state["autenticado"] and not st.session_state["modo_cliente"]:
     col_logo_login, col_txt_login = st.columns([1, 3])
     with col_logo_login:
         try: st.image("LOGO agua Emana VECTOR 01.png", width=160)
         except: st.write("💧")
     with col_txt_login:
         st.markdown("<h1 style='color: #0284c7; font-weight: 700; margin:0;'>Distribuidora EMANA</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='color: #0369a1; font-weight: 600;'>✨ Vitalidad vida sana</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #0369a1; font-weight: 600;'>✨ Vitalidad vida sana — Sistema Interno</p>", unsafe_allow_html=True)
     
+    if st.button("⬅️ Volver al Catálogo Público"):
+        st.session_state["modo_cliente"] = True
+        st.rerun()
+
     col_cen, _ = st.columns([2, 1])
     with col_cen:
         tab_login, tab_recuperar = st.tabs(["🔒 Iniciar Sesión", "🔑 Olvidé mi Contraseña"])
@@ -246,7 +357,7 @@ if not st.session_state["autenticado"]:
                     st.warning("Ingresa un correo válido y la nueva contraseña.")
     st.stop()
 
-# --- ENCABEZADO PRINCIPAL ---
+# --- ENCABEZADO PRINCIPAL (SISTEMA INTERNO) ---
 col_head_img, col_head_txt = st.columns([1, 4])
 with col_head_img:
     try:
@@ -263,7 +374,7 @@ with col_head_txt:
         </div>
     """, unsafe_allow_html=True)
 
-# --- MENÚ DE NAVEGACIÓN ---
+# --- MENÚ DE NAVEGACIÓN INTERNO ---
 with st.sidebar:
     st.write(f"👤 **{st.session_state['usuario']}** ({st.session_state['rol']})")
     
@@ -292,9 +403,10 @@ with st.sidebar:
         st.session_state["autenticado"] = False
         st.session_state["usuario"] = None
         st.session_state["rol"] = None
+        st.session_state["modo_cliente"] = True
         st.rerun()
 
-# --- MÓDULO 1: REGISTRAR VENTAS / PEDIDOS Y GESTOR DE CATÁLOGO ---
+# --- MÓDULO 1: REGISTRAR VENTAS / PEDIDOS Y GESTOR DE CATÁLOGO DINÁMICO ---
 if opcion == "Nuevas Ventas":
     st.header("📝 Registrar Nuevo Pedido")
     
@@ -323,85 +435,70 @@ if opcion == "Nuevas Ventas":
     with c_ref:
         local_referencia = st.text_input("Referencia de Entrega")
 
-    st.subheader("📦 Catálogo de Productos")
+    st.subheader("📦 Catálogo de Productos Dinámico")
     
+    # OPCIÓN ADMIN: AGREGAR NUEVO PRODUCTO AL CATÁLOGO
     if st.session_state["rol"] == "ADMIN":
-        with st.expander("⚙️ Opciones de Imágenes del Catálogo (Solo Administrador)"):
-            st.info("Como Administrador, puedes modificar, subir o quitar las imágenes de los productos desde cualquier dispositivo.")
-            
-            up_625 = st.file_uploader("Cambiar / Subir Imagen Botella 625ml", type=["png", "jpg", "jpeg"], key="u625")
-            if up_625: 
-                url = guardar_imagen_supabase(up_625, "img_625.png")
-                if url: st.session_state["img_625"] = url; st.rerun()
-            if st.button("Quitar Imagen 625ml"): 
-                eliminar_imagen_supabase("img_625.png")
-                st.session_state["img_625"] = None
-                st.rerun()
-            
-            up_85 = st.file_uploader("Cambiar / Subir Imagen Botella 8.5L", type=["png", "jpg", "jpeg"], key="u85")
-            if up_85: 
-                url = guardar_imagen_supabase(up_85, "img_85.png")
-                if url: st.session_state["img_85"] = url; st.rerun()
-            if st.button("Quitar Imagen 8.5L"): 
-                eliminar_imagen_supabase("img_85.png")
-                st.session_state["img_85"] = None
-                st.rerun()
+        with st.expander("➕ Agregar Nuevo Producto / Gestionar Catálogo (Solo Administrador)"):
+            st.info("Añade nuevos productos con sus precios por unidad, precio por mayor y fotografía.")
+            with st.form("form_nuevo_prod"):
+                n_prod = st.text_input("Nombre del Producto (Ej: Botella 1.5L)")
+                p_und = st.number_input("Precio por Unidad (S/.)", min_value=0.0, step=0.50, value=10.0)
+                p_mayor = st.number_input("Precio por Mayor (S/.)", min_value=0.0, step=0.50, value=8.0)
+                min_m = st.number_input("Mínimo Unidades para Precio por Mayor", min_value=1, value=5)
+                img_prod = st.file_uploader("Imagen del Producto", type=["png", "jpg", "jpeg"])
+                
+                btn_crear_p = st.form_submit_button("Guardar Producto en el Catálogo")
+                if btn_crear_p and n_prod:
+                    url_img = None
+                    if img_prod:
+                        nombre_file = f"prod_{datetime.datetime.now().timestamp()}.png"
+                        url_img = guardar_imagen_supabase(img_prod, nombre_file)
+                    
+                    try:
+                        supabase.table("productos").insert({
+                            "nombre": n_prod,
+                            "precio_und": p_und,
+                            "precio_mayor": p_mayor,
+                            "min_mayor": min_m,
+                            "imagen": url_img
+                        }).execute()
+                        st.success(f"✅ Producto '{n_prod}' agregado con éxito.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error al guardar producto: {e}")
 
-            up_20 = st.file_uploader("Cambiar / Subir Imagen Caja 20L", type=["png", "jpg", "jpeg"], key="u20")
-            if up_20: 
-                url = guardar_imagen_supabase(up_20, "img_20.png")
-                if url: st.session_state["img_20"] = url; st.rerun()
-            if st.button("Quitar Imagen 20L"): 
-                eliminar_imagen_supabase("img_20.png")
-                st.session_state["img_20"] = None
-                st.rerun()
+    # RENDERIZADO DINÁMICO DE TODOS LOS PRODUCTOS
+    productos_lista = obtener_productos()
+    cantidades_seleccionadas = {}
+    precios_calculados = {}
+    total_acumulado = 0.0
 
-    p1, p2, p3 = st.columns(3)
-    
-    # 1. Paquete 625 ml
-    with p1:
-        st.markdown('<div class="product-card">', unsafe_allow_html=True)
-        if st.session_state.get("img_625"):
-            try: st.image(st.session_state["img_625"], use_container_width=True)
-            except: st.markdown("🍾 **Paquete 625 ml (20 UND)**")
-        else:
-            st.markdown("🍾 **Paquete 625 ml (20 UND)** *(Sin imagen)*")
-        
-        cant_625 = st.number_input("Cantidad Paquetes 625ml", min_value=0, value=0)
-        precio_sug_625 = 10.00 if cant_625 >= 5 else 12.50
-        precio_final_625 = st.number_input("Precio Unitario Paquete 625ml (S/.)", value=precio_sug_625, step=0.50)
-        st.markdown('</div>', unsafe_allow_html=True)
+    if productos_lista:
+        cols_p = st.columns(3)
+        for i, prod in enumerate(productos_lista):
+            with cols_p[i % 3]:
+                st.markdown('<div class="product-card">', unsafe_allow_html=True)
+                if prod.get("imagen"):
+                    st.image(prod["imagen"], use_container_width=True)
+                else:
+                    st.markdown(f"🍾 **{prod['nombre']}** *(Sin imagen)*")
+                
+                cant = st.number_input(f"Cantidad {prod['nombre']}", min_value=0, value=0, key=f"cant_{prod['id']}")
+                
+                # Cálculo de precio según volumen
+                p_sugerido = prod['precio_mayor'] if cant >= prod['min_mayor'] else prod['precio_und']
+                p_final = st.number_input(f"Precio Unit. S/. ({prod['nombre']})", value=float(p_sugerido), step=0.50, key=f"p_{prod['id']}")
+                
+                subtotal_item = cant * p_final
+                total_acumulado += subtotal_item
+                
+                if cant > 0:
+                    cantidades_seleccionadas[prod['nombre']] = (cant, p_final)
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
 
-    # 2. Botellón 8.5 L
-    with p2:
-        st.markdown('<div class="product-card">', unsafe_allow_html=True)
-        if st.session_state.get("img_85"):
-            try: st.image(st.session_state["img_85"], use_container_width=True)
-            except: st.markdown("🪣 **Botella 8.5 L**")
-        else:
-            st.markdown("🪣 **Botella 8.5 L** *(Sin imagen)*")
-            
-        cant_85 = st.number_input("Cantidad Botellones 8.5L", min_value=0, value=0)
-        precio_sug_85 = 7.00 if cant_85 >= 10 else 9.00
-        precio_final_85 = st.number_input("Precio Unitario Botellón 8.5L (S/.)", value=precio_sug_85, step=0.50)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # 3. Caja de 20 L
-    with p3:
-        st.markdown('<div class="product-card">', unsafe_allow_html=True)
-        if st.session_state.get("img_20"):
-            try: st.image(st.session_state["img_20"], use_container_width=True)
-            except: st.markdown("📦 **Caja 20 L**")
-        else:
-            st.markdown("📦 **Caja 20 L** *(Sin imagen)*")
-            
-        cant_20 = st.number_input("Cantidad Cajas 20L", min_value=0, value=0)
-        precio_sug_20 = 18.00 if cant_20 >= 5 else 20.00
-        precio_final_20 = st.number_input("Precio Unitario Caja 20L (S/.)", value=precio_sug_20, step=0.50)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    subtotal_calc = (cant_625 * precio_final_625) + (cant_85 * precio_final_85) + (cant_20 * precio_final_20)
-    total = st.number_input("Monto Total Calculado (S/.)", value=float(subtotal_calc), min_value=0.0, step=0.50)
+    total = st.number_input("Monto Total Calculado (S/.)", value=float(total_acumulado), min_value=0.0, step=0.50)
 
     st.markdown("---")
     
@@ -414,6 +511,7 @@ if opcion == "Nuevas Ventas":
         
         with col_si:
             if st.button("✅ Sí, Guardar Venta", use_container_width=True):
+                resumen_prods = " | ".join([f"{k}: {v[0]} (S/.{v[1]})" for k, v in cantidades_seleccionadas.items()])
                 nuevo_pedido = {
                     "vendedor": vendedor_activo,
                     "cliente_nombre": cliente_nombre if cliente_nombre else "SIN NOMBRE",
@@ -424,7 +522,7 @@ if opcion == "Nuevas Ventas":
                     "fecha_entrega": str(fecha_entrega),
                     "rango_entrega": rango_entrega,
                     "total": total,
-                    "productos": f"625ml: {cant_625} (S/.{precio_final_625}) | 8.5L: {cant_85} (S/.{precio_final_85}) | 20L: {cant_20} (S/.{precio_final_20})",
+                    "productos": resumen_prods if resumen_prods else "Sin productos",
                     "estado": "ACTIVO",
                     "estado_entrega": "PENDIENTE"
                 }
@@ -440,11 +538,10 @@ if opcion == "Nuevas Ventas":
                 st.session_state["mostrar_confirmacion"] = False
                 st.info("Puedes corregir los datos del formulario.")
 
-# --- MÓDULO 2: MIS PEDIDOS (CORREGIDO PARA MOSTRAR TODOS LOS PEDIDOS AL ADMIN) ---
+# --- MÓDULO 2: MIS PEDIDOS ---
 elif opcion == "Mis Pedidos":
     st.header("📋 Mis Pedidos Registrados")
     
-    # Si es ADMIN muestra todos los pedidos; si es VENDEDOR solo muestra los suyos
     if st.session_state["rol"] == "ADMIN":
         res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
     else:
@@ -478,12 +575,10 @@ elif opcion == "Rutas GPS" and st.session_state["rol"] == "ADMIN":
 
     res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
     
-    # Visualización con Google Maps integrado vía iframe
     col_map1, col_map2 = st.columns([2, 1])
     
     with col_map1:
         st.subheader("📍 Geolocalización Online y Monitoreo Campo")
-        # Visualizador interactivo de Google Maps enfocado en la zona de trabajo
         map_html = """
         <iframe 
             width="100%" 
@@ -540,7 +635,6 @@ elif opcion == "Personal (8 Cuentas)" and st.session_state["rol"] == "ADMIN":
         u_rol = st.selectbox("Rol", ["VENDEDOR", "ADMIN"])
         
         if st.form_submit_button("Crear Cuenta de Colaborador"):
-            # Validaciones para DNI y RUC
             if doc_tipo == "DNI" and (len(doc_num) != 8 or not doc_num.isdigit()):
                 st.error("❌ El DNI debe contener exactamente 8 dígitos numéricos.")
             elif doc_tipo == "RUC" and (len(doc_num) != 11 or not doc_num.isdigit()):
