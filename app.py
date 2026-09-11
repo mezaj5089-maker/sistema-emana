@@ -182,13 +182,34 @@ def guardar_imagen_supabase(file, nombre_destino):
 def obtener_productos():
     try:
         res = supabase.table("productos").select("*").execute()
-        return res.data if res.data else []
+        productos = res.data if res.data else []
     except Exception:
+        productos = []
+
+    # Mapeo de imágenes públicas almacenadas en el bucket 'catalogo'
+    img_625 = supabase.storage.from_("catalogo").get_public_url("img_625.png")
+    img_85 = supabase.storage.from_("catalogo").get_public_url("img_85.png")
+    img_20 = supabase.storage.from_("catalogo").get_public_url("img_20.png")
+
+    if not productos:
         return [
-            {"id": 1, "nombre": "Paquete 625 ml (20 UND)", "precio_und": 12.50, "precio_mayor": 10.00, "min_mayor": 5, "imagen": None},
-            {"id": 2, "nombre": "Botella 8.5 L", "precio_und": 9.00, "precio_mayor": 7.00, "min_mayor": 10, "imagen": None},
-            {"id": 3, "nombre": "Caja 20 L", "precio_und": 20.00, "precio_mayor": 18.00, "min_mayor": 5, "imagen": None}
+            {"id": 1, "nombre": "Paquete 625 ml (20 UND)", "precio_und": 12.50, "precio_mayor": 10.00, "min_mayor": 5, "imagen": img_625},
+            {"id": 2, "nombre": "Botella 8.5 L", "precio_und": 9.00, "precio_mayor": 7.00, "min_mayor": 10, "imagen": img_85},
+            {"id": 3, "nombre": "Caja 20 L", "precio_und": 20.00, "precio_mayor": 18.00, "min_mayor": 5, "imagen": img_20}
         ]
+
+    # Asigna la imagen según corresponda si la base de datos devuelve None
+    for p in productos:
+        if not p.get("imagen"):
+            nombre = p.get("nombre", "").lower()
+            if "625" in nombre:
+                p["imagen"] = img_625
+            elif "8.5" in nombre:
+                p["imagen"] = img_85
+            elif "20" in nombre:
+                p["imagen"] = img_20
+
+    return productos
 
 def mostrar_imagen_producto(url_imagen, alt_text):
     """Muestra la imagen correctamente sin dejar cajas vacías."""
@@ -673,12 +694,11 @@ elif opcion == "Analítica Predictiva" and st.session_state["rol"] == "ADMIN":
         fig.update_layout(template="plotly_white")
         st.plotly_chart(fig, use_container_width=True)
 
-# --- MÓDULO 6: PERSONAL (SOLO COLUMNAS EXISTENTES PARA EVITAR CRASH) ---
+# --- MÓDULO 6: PERSONAL ---
 elif opcion == "Personal (8 Cuentas)" and st.session_state["rol"] == "ADMIN":
     st.header("👥 Gestión de Colaboradores de EMANA (Acceso Exclusivo Admin)")
     st.info("Solo tú como Administrador puedes dar de alta o autorizar cuentas para tus vendedores.")
     
-    # Consulta segura seleccionando sólo las columnas existentes en tu tabla usuarios
     try:
         res_u = supabase.table("usuarios").select("id, username, gmail, rol").execute()
         if res_u.data:
