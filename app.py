@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ESTILOS CSS3 AVANZADOS (MEJORADO: AZUL VIBRANTE, GLASSMORPHISM Y BOTÓN WHATSAPP) ---
+# --- ESTILOS CSS3 AVANZADOS (AZUL VIBRANTE, GLASSMORPHISM Y BOTÓN WHATSAPP) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
@@ -23,12 +23,12 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    /* Fondo Azul Claro Armónico con degrada brillante */
+    /* Fondo Azul Claro Armónico */
     .stApp {
         background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%);
     }
     
-    /* Header principal con Glassmorphism y Glow */
+    /* Header principal con Glassmorphism */
     .header-banner {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         padding: 22px 32px;
@@ -42,7 +42,7 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* Tarjetas de producto interactivas estilo EMANA */
+    /* Tarjetas de producto interactivas */
     .product-card {
         background: #ffffff;
         border-radius: 18px;
@@ -84,7 +84,7 @@ st.markdown("""
         border: 1px solid #86efac;
     }
 
-    /* Bordes y Botones Neón Vibrantes */
+    /* Botones Neón */
     .stButton > button {
         border-radius: 12px !important;
         font-weight: 700 !important;
@@ -101,7 +101,7 @@ st.markdown("""
         box-shadow: 0 6px 18px rgba(56, 189, 248, 0.55) !important;
     }
 
-    /* Botón flotante directo de WhatsApp */
+    /* Botón flotante de WhatsApp */
     .btn-whatsapp {
         display: inline-flex;
         align-items: center;
@@ -125,7 +125,6 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6);
     }
     
-    /* Inputs con bordes brillantes activos */
     div[data-baseweb="input"] > div {
         border-radius: 10px !important;
         border: 2px solid #38bdf8 !important;
@@ -136,12 +135,20 @@ st.markdown("""
         box-shadow: 0 0 12px rgba(2, 132, 199, 0.4) !important;
     }
     
-    /* Estilos de tabla de datos */
     div[data-testid="stDataFrame"] {
         border-radius: 14px;
         overflow: hidden;
         border: 2px solid #7dd3fc;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Estilo del contenedor de video promocional */
+    .video-container {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 15px;
+        border: 2px solid #0284c7;
+        box-shadow: 0 8px 20px rgba(2, 132, 199, 0.2);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -158,7 +165,7 @@ try:
 except Exception:
     st.error("⚠️ Error de conexión a la base de datos Supabase. Verifica tus Secrets.")
 
-# --- FUNCIONES DE PERSISTENCIA DE IMÁGENES Y PRODUCTOS ---
+# --- FUNCIONES AUXILIARES Y PERSISTENCIA ---
 def guardar_imagen_supabase(file, nombre_destino):
     try:
         bytes_data = file.getvalue()
@@ -177,12 +184,38 @@ def obtener_productos():
         res = supabase.table("productos").select("*").execute()
         return res.data if res.data else []
     except Exception:
-        # Productos base por defecto en caso de no existir la tabla aún
         return [
             {"id": 1, "nombre": "Paquete 625 ml (20 UND)", "precio_und": 12.50, "precio_mayor": 10.00, "min_mayor": 5, "imagen": None},
             {"id": 2, "nombre": "Botella 8.5 L", "precio_und": 9.00, "precio_mayor": 7.00, "min_mayor": 10, "imagen": None},
             {"id": 3, "nombre": "Caja 20 L", "precio_und": 20.00, "precio_mayor": 18.00, "min_mayor": 5, "imagen": None}
         ]
+
+def mostrar_imagen_producto(url_imagen, alt_text):
+    """Muestra la imagen correctamente sin dejar cajas vacías."""
+    if url_imagen and isinstance(url_imagen, str) and url_imagen.strip().startswith("http"):
+        st.image(url_imagen, use_container_width=True)
+    else:
+        st.markdown(
+            f"""
+            <div style="
+                background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+                border: 2px dashed #0284c7;
+                border-radius: 12px;
+                height: 180px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: #0369a1;
+                font-weight: bold;
+                margin-bottom: 10px;
+            ">
+                <span style="font-size: 36px;">💧</span>
+                <span style="font-size: 14px; text-align: center; padding: 0 5px;">{alt_text}</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 # --- ESTADO DE SESIÓN ---
 if "autenticado" not in st.session_state:
@@ -193,8 +226,8 @@ if "rol" not in st.session_state:
     st.session_state["rol"] = None
 if "modo_cliente" not in st.session_state:
     st.session_state["modo_cliente"] = True
-if "gps_coords" not in st.session_state:
-    st.session_state["gps_coords"] = {"lat": -11.0500, "lng": -75.3300}
+if "promo_video_url" not in st.session_state:
+    st.session_state["promo_video_url"] = "https://www.w3schools.com/html/mov_bbb.mp4"
 
 # ENLACE WHATSAPP VINCULADO
 WA_LINK = "https://wa.me/qr/ZEJEN3EUZZQRF1"
@@ -206,7 +239,6 @@ with st.sidebar:
     except:
         st.title("💧 EMANA App")
     
-    # Botón Flotante para contacto directo por WhatsApp
     st.markdown(f'''
         <a href="{WA_LINK}" target="_blank" class="btn-whatsapp">
             📱 Consultar por WhatsApp
@@ -245,14 +277,13 @@ with st.sidebar:
     components.html(gps_reloj_js, height=115)
     st.markdown("---")
 
-    # Selección de Vista (Cliente / Personal)
     if not st.session_state["autenticado"]:
         st.info("💡 Estás en el Catálogo Público.")
         if st.button("🔑 Acceso Personal / Ventas"):
             st.session_state["modo_cliente"] = False
             st.rerun()
 
-# --- INTERFAZ PÚBLICA / VISTA CLIENTE (SOLO VISUALIZACIÓN) ---
+# --- VISTA CLIENTE (PÚBLICA) ---
 if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
     col_head_img, col_head_txt = st.columns([1, 4])
     with col_head_img:
@@ -268,38 +299,44 @@ if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
             </div>
         """, unsafe_allow_html=True)
     
-    st.markdown("### 📦 Nuestros Productos y Precios")
-    st.write("Explora nuestro catálogo. Si deseas realizar un pedido, comunícate directamente con nosotros por WhatsApp.")
+    # LAYOUT: PRODUCTOS (IZQUIERDA) Y VIDEO PROMOCIONAL (DERECHA)
+    col_cat_pub, col_vid_pub = st.columns([2.7, 1.3], gap="medium")
     
-    prods = obtener_productos()
-    
-    if prods:
-        cols = st.columns(3)
-        for idx, p in enumerate(prods):
-            with cols[idx % 3]:
-                st.markdown('<div class="product-card">', unsafe_allow_html=True)
-                if p.get("imagen"):
-                    st.image(p["imagen"], use_container_width=True)
-                else:
-                    st.markdown("💧 **Agua Mineral EMANA**")
-                
-                st.markdown(f"#### {p['nombre']}")
-                st.markdown(f'<div class="price-badge">Precio Unidad: S/. {float(p["precio_und"]):,.2f}</div>', unsafe_allow_html=True)
-                st.markdown(f'<div class="price-badge-wholesale">Precio Por Mayor: S/. {float(p["precio_mayor"]):,.2f}<br><small>(A partir de {p["min_mayor"]} und)</small></div>', unsafe_allow_html=True)
-                
-                st.markdown(f'''
-                    <a href="{WA_LINK}" target="_blank" class="btn-whatsapp" style="font-size: 12px; padding: 8px 10px;">
-                        📲 Pedir este producto
-                    </a>
-                ''', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
-    else:
-        st.info("Cargando catálogo de productos...")
+    with col_cat_pub:
+        st.markdown("### 📦 Nuestros Productos y Precios")
+        st.write("Explora nuestro catálogo. Si deseas realizar un pedido, comunícate directamente con nosotros por WhatsApp.")
+        
+        prods = obtener_productos()
+        if prods:
+            cols = st.columns(3)
+            for idx, p in enumerate(prods):
+                with cols[idx % 3]:
+                    st.markdown('<div class="product-card">', unsafe_allow_html=True)
+                    img_url = p.get("imagen") or p.get("imagen_url")
+                    mostrar_imagen_producto(img_url, p["nombre"])
+                    
+                    st.markdown(f"#### {p['nombre']}")
+                    st.markdown(f'<div class="price-badge">Precio Unidad: S/. {float(p["precio_und"]):,.2f}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="price-badge-wholesale">Precio Por Mayor: S/. {float(p["precio_mayor"]):,.2f}<br><small>(A partir de {p["min_mayor"]} und)</small></div>', unsafe_allow_html=True)
+                    
+                    st.markdown(f'''
+                        <a href="{WA_LINK}" target="_blank" class="btn-whatsapp" style="font-size: 12px; padding: 8px 10px;">
+                            📲 Pedir este producto
+                        </a>
+                    ''', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+    with col_vid_pub:
+        st.markdown("### 🎬 Spot Promocional")
+        st.markdown('<div class="video-container">', unsafe_allow_html=True)
+        st.video(st.session_state["promo_video_url"])
+        st.caption("✨ Agua EMANA - Vitalidad y Vida Sana")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.stop()
 
-# --- LOGIN & RECUPERACIÓN (SI NO ES MODO CLIENTE) ---
+# --- LOGIN Y RECUPERACIÓN ---
 if not st.session_state["autenticado"] and not st.session_state["modo_cliente"]:
     col_logo_login, col_txt_login = st.columns([1, 3])
     with col_logo_login:
@@ -332,7 +369,7 @@ if not st.session_state["autenticado"] and not st.session_state["modo_cliente"]:
                         if res.data:
                             st.session_state["autenticado"] = True
                             st.session_state["usuario"] = res.data[0]["username"]
-                            st.session_state["rol"] = res.data[0]["rol"]
+                            st.session_state["rol"] = res.data[0].get("rol", "VENDEDOR")
                             st.success(f"Bienvenido {st.session_state['usuario']}")
                             st.rerun()
                         else:
@@ -348,7 +385,7 @@ if not st.session_state["autenticado"] and not st.session_state["modo_cliente"]:
                     try:
                         res = supabase.table("usuarios").update({"password": nueva_pass}).eq("gmail", gmail_rec).execute()
                         if res.data:
-                            st.success(f"✅ Contraseña actualizada correctamente para {gmail_rec}. Puedes iniciar sesión ahora.")
+                            st.success(f"✅ Contraseña actualizada correctamente para {gmail_rec}.")
                         else:
                             st.error("El correo no se encuentra registrado en el sistema.")
                     except Exception as ex:
@@ -357,13 +394,11 @@ if not st.session_state["autenticado"] and not st.session_state["modo_cliente"]:
                     st.warning("Ingresa un correo válido y la nueva contraseña.")
     st.stop()
 
-# --- ENCABEZADO PRINCIPAL (SISTEMA INTERNO) ---
+# --- HEADER INTERNO ---
 col_head_img, col_head_txt = st.columns([1, 4])
 with col_head_img:
-    try:
-        st.image("LOGO agua Emana VECTOR 01.png", width=140)
-    except:
-        st.write("💧")
+    try: st.image("LOGO agua Emana VECTOR 01.png", width=140)
+    except: st.write("💧")
 with col_head_txt:
     st.markdown("""
         <div class="header-banner">
@@ -374,7 +409,7 @@ with col_head_txt:
         </div>
     """, unsafe_allow_html=True)
 
-# --- MENÚ DE NAVEGACIÓN INTERNO ---
+# --- MENÚ LATERAL INTERNO ---
 with st.sidebar:
     st.write(f"👤 **{st.session_state['usuario']}** ({st.session_state['rol']})")
     
@@ -406,7 +441,7 @@ with st.sidebar:
         st.session_state["modo_cliente"] = True
         st.rerun()
 
-# --- MÓDULO 1: REGISTRAR VENTAS / PEDIDOS Y GESTOR DE CATÁLOGO DINÁMICO ---
+# --- MÓDULO 1: REGISTRAR VENTAS Y CATÁLOGO INTERNO + SECCIÓN DE VIDEO ---
 if opcion == "Nuevas Ventas":
     st.header("📝 Registrar Nuevo Pedido")
     
@@ -435,70 +470,96 @@ if opcion == "Nuevas Ventas":
     with c_ref:
         local_referencia = st.text_input("Referencia de Entrega")
 
-    st.subheader("📦 Catálogo de Productos Dinámico")
-    
-    # OPCIÓN ADMIN: AGREGAR NUEVO PRODUCTO AL CATÁLOGO
-    if st.session_state["rol"] == "ADMIN":
-        with st.expander("➕ Agregar Nuevo Producto / Gestionar Catálogo (Solo Administrador)"):
-            st.info("Añade nuevos productos con sus precios por unidad, precio por mayor y fotografía.")
-            with st.form("form_nuevo_prod"):
-                n_prod = st.text_input("Nombre del Producto (Ej: Botella 1.5L)")
-                p_und = st.number_input("Precio por Unidad (S/.)", min_value=0.0, step=0.50, value=10.0)
-                p_mayor = st.number_input("Precio por Mayor (S/.)", min_value=0.0, step=0.50, value=8.0)
-                min_m = st.number_input("Mínimo Unidades para Precio por Mayor", min_value=1, value=5)
-                img_prod = st.file_uploader("Imagen del Producto", type=["png", "jpg", "jpeg"])
-                
-                btn_crear_p = st.form_submit_button("Guardar Producto en el Catálogo")
-                if btn_crear_p and n_prod:
-                    url_img = None
-                    if img_prod:
-                        nombre_file = f"prod_{datetime.datetime.now().timestamp()}.png"
-                        url_img = guardar_imagen_supabase(img_prod, nombre_file)
+    # LAYOUT DE CATÁLOGO + DERECHA SPOT VIDEO
+    col_cat_int, col_vid_int = st.columns([2.7, 1.3], gap="medium")
+
+    with col_cat_int:
+        st.subheader("📦 Catálogo de Productos Dinámico")
+        
+        # ADMINISTRADOR: GESTIONAR CATÁLOGO
+        if st.session_state["rol"] == "ADMIN":
+            with st.expander("➕ Agregar Nuevo Producto / Gestionar Catálogo (Solo Administrador)"):
+                with st.form("form_nuevo_prod"):
+                    n_prod = st.text_input("Nombre del Producto")
+                    p_und = st.number_input("Precio por Unidad (S/.)", min_value=0.0, step=0.50, value=10.0)
+                    p_mayor = st.number_input("Precio por Mayor (S/.)", min_value=0.0, step=0.50, value=8.0)
+                    min_m = st.number_input("Mínimo Unidades para Precio por Mayor", min_value=1, value=5)
+                    img_prod = st.file_uploader("Imagen del Producto", type=["png", "jpg", "jpeg"])
                     
-                    try:
-                        supabase.table("productos").insert({
-                            "nombre": n_prod,
-                            "precio_und": p_und,
-                            "precio_mayor": p_mayor,
-                            "min_mayor": min_m,
-                            "imagen": url_img
-                        }).execute()
-                        st.success(f"✅ Producto '{n_prod}' agregado con éxito.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error al guardar producto: {e}")
+                    btn_crear_p = st.form_submit_button("Guardar Producto en el Catálogo")
+                    if btn_crear_p and n_prod:
+                        url_img = None
+                        if img_prod:
+                            nombre_file = f"prod_{datetime.datetime.now().timestamp()}.png"
+                            url_img = guardar_imagen_supabase(img_prod, nombre_file)
+                        
+                        try:
+                            supabase.table("productos").insert({
+                                "nombre": n_prod,
+                                "precio_und": p_und,
+                                "precio_mayor": p_mayor,
+                                "min_mayor": min_m,
+                                "imagen": url_img
+                            }).execute()
+                            st.success(f"✅ Producto '{n_prod}' agregado.")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error al guardar producto: {e}")
 
-    # RENDERIZADO DINÁMICO DE TODOS LOS PRODUCTOS
-    productos_lista = obtener_productos()
-    cantidades_seleccionadas = {}
-    precios_calculados = {}
-    total_acumulado = 0.0
+        productos_lista = obtener_productos()
+        cantidades_seleccionadas = {}
+        total_acumulado = 0.0
 
-    if productos_lista:
-        cols_p = st.columns(3)
-        for i, prod in enumerate(productos_lista):
-            with cols_p[i % 3]:
-                st.markdown('<div class="product-card">', unsafe_allow_html=True)
-                if prod.get("imagen"):
-                    st.image(prod["imagen"], use_container_width=True)
-                else:
-                    st.markdown(f"🍾 **{prod['nombre']}** *(Sin imagen)*")
-                
-                cant = st.number_input(f"Cantidad {prod['nombre']}", min_value=0, value=0, key=f"cant_{prod['id']}")
-                
-                # Cálculo de precio según volumen
-                p_sugerido = prod['precio_mayor'] if cant >= prod['min_mayor'] else prod['precio_und']
-                p_final = st.number_input(f"Precio Unit. S/. ({prod['nombre']})", value=float(p_sugerido), step=0.50, key=f"p_{prod['id']}")
-                
-                subtotal_item = cant * p_final
-                total_acumulado += subtotal_item
-                
-                if cant > 0:
-                    cantidades_seleccionadas[prod['nombre']] = (cant, p_final)
-                st.markdown('</div>', unsafe_allow_html=True)
-                st.markdown("<br>", unsafe_allow_html=True)
+        if productos_lista:
+            cols_p = st.columns(3)
+            for i, prod in enumerate(productos_lista):
+                with cols_p[i % 3]:
+                    st.markdown('<div class="product-card">', unsafe_allow_html=True)
+                    img_url = prod.get("imagen") or prod.get("imagen_url")
+                    mostrar_imagen_producto(img_url, prod['nombre'])
+                    
+                    cant = st.number_input(f"Cantidad {prod['nombre']}", min_value=0, value=0, key=f"cant_{prod['id']}")
+                    p_sugerido = prod['precio_mayor'] if cant >= prod['min_mayor'] else prod['precio_und']
+                    p_final = st.number_input(f"Precio Unit. S/. ({prod['nombre']})", value=float(p_sugerido), step=0.50, key=f"p_{prod['id']}")
+                    
+                    subtotal_item = cant * p_final
+                    total_acumulado += subtotal_item
+                    
+                    if cant > 0:
+                        cantidades_seleccionadas[prod['nombre']] = (cant, p_final)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
 
-    total = st.number_input("Monto Total Calculado (S/.)", value=float(total_acumulado), min_value=0.0, step=0.50)
+        total = st.number_input("Monto Total Calculado (S/.)", value=float(total_acumulado), min_value=0.0, step=0.50)
+
+    with col_vid_int:
+        st.subheader("🎬 Spot Promocional")
+        st.markdown('<div class="video-container">', unsafe_allow_html=True)
+        
+        # Reproducción de Video
+        if isinstance(st.session_state["promo_video_url"], str):
+            st.video(st.session_state["promo_video_url"])
+        else:
+            st.video(st.session_state["promo_video_url"])
+
+        # Módulo de Subida/Edición de Video para Admin
+        if st.session_state["rol"] == "ADMIN":
+            st.divider()
+            st.caption("⚙️ **Configuración de Video (Solo Admin)**")
+            
+            v_input = st.text_input("Enlace (YouTube / URL MP4)", value=st.session_state["promo_video_url"] if isinstance(st.session_state["promo_video_url"], str) else "")
+            if st.button("Actualizar Enlace"):
+                st.session_state["promo_video_url"] = v_input
+                st.success("Enlace actualizado")
+                st.rerun()
+                
+            v_file = st.file_uploader("O subir video (9:16 o 16:9)", type=["mp4", "mov"])
+            if v_file:
+                st.session_state["promo_video_url"] = v_file
+                st.success("Video cargado correctamente.")
+                st.rerun()
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("---")
     
@@ -528,7 +589,7 @@ if opcion == "Nuevas Ventas":
                 }
                 try:
                     supabase.table("pedidos").insert(nuevo_pedido).execute()
-                    st.success(f"✅ ¡Venta guardada con éxito por {vendedor_activo} en la nube!")
+                    st.success(f"✅ ¡Venta guardada con éxito por {vendedor_activo}!")
                     st.session_state["mostrar_confirmacion"] = False
                 except Exception as e:
                     st.error(f"Error al guardar en la nube: {e}")
@@ -536,7 +597,6 @@ if opcion == "Nuevas Ventas":
         with col_no:
             if st.button("❌ No, Corregir Datos", use_container_width=True):
                 st.session_state["mostrar_confirmacion"] = False
-                st.info("Puedes corregir los datos del formulario.")
 
 # --- MÓDULO 2: MIS PEDIDOS ---
 elif opcion == "Mis Pedidos":
@@ -553,7 +613,7 @@ elif opcion == "Mis Pedidos":
         
         csv_data = df_pedidos.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📁 Descargar Respaldo CSV (Para Google Drive)",
+            label="📁 Descargar Respaldo CSV",
             data=csv_data,
             file_name=f"respaldo_pedidos_{datetime.date.today()}.csv",
             mime="text/csv"
@@ -568,17 +628,16 @@ elif opcion == "Subir Evidencia":
     if archivo and st.button("Subir Evidencia"):
         st.success(f"Archivo '{archivo.name}' guardado correctamente.")
 
-# --- MÓDULO 4: CONTROL Y GUÍA DE RUTAS CON GOOGLE MAPS / GPS EN VIVO (ADMIN) ---
+# --- MÓDULO 4: RUTAS GPS ---
 elif opcion == "Rutas GPS" and st.session_state["rol"] == "ADMIN":
     st.header("🗺️ Control y Guía de Rutas (GPS y Google Maps En Vivo)")
-    st.write("Supervisión de ubicación en tiempo real de los vendedores en campo y rutas de ventas.")
+    st.write("Supervisión de ubicación en tiempo real.")
 
     res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
-    
     col_map1, col_map2 = st.columns([2, 1])
     
     with col_map1:
-        st.subheader("📍 Geolocalización Online y Monitoreo Campo")
+        st.subheader("📍 Geolocalización Online")
         map_html = """
         <iframe 
             width="100%" 
@@ -598,7 +657,7 @@ elif opcion == "Rutas GPS" and st.session_state["rol"] == "ADMIN":
         else:
             st.info("No hay puntos cargados actualmente.")
 
-# --- MÓDULO 5: ANALÍTICA PREDICTIVA Y GRÁFICOS DASHBOARD ---
+# --- MÓDULO 5: ANALÍTICA PREDICTIVA ---
 elif opcion == "Analítica Predictiva" and st.session_state["rol"] == "ADMIN":
     st.header("📊 Tablero Analítico Dinámico")
     res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
@@ -614,42 +673,38 @@ elif opcion == "Analítica Predictiva" and st.session_state["rol"] == "ADMIN":
         fig.update_layout(template="plotly_white")
         st.plotly_chart(fig, use_container_width=True)
 
-# --- MÓDULO 6: GESTIÓN DE PERSONAL (SOLO ADMINISTRADOR - CON VALIDACIÓN DNI/RUC) ---
+# --- MÓDULO 6: PERSONAL (SOLO COLUMNAS EXISTENTES PARA EVITAR CRASH) ---
 elif opcion == "Personal (8 Cuentas)" and st.session_state["rol"] == "ADMIN":
     st.header("👥 Gestión de Colaboradores de EMANA (Acceso Exclusivo Admin)")
     st.info("Solo tú como Administrador puedes dar de alta o autorizar cuentas para tus vendedores.")
     
-    res_u = supabase.table("usuarios").select("id, username, gmail, rol, documento_tipo, documento_num").execute()
-    if res_u.data:
-        st.dataframe(pd.DataFrame(res_u.data), use_container_width=True)
+    # Consulta segura seleccionando sólo las columnas existentes en tu tabla usuarios
+    try:
+        res_u = supabase.table("usuarios").select("id, username, gmail, rol").execute()
+        if res_u.data:
+            st.dataframe(pd.DataFrame(res_u.data), use_container_width=True)
+        else:
+            st.info("No hay colaboradores registrados.")
+    except Exception as ex:
+        st.error(f"Error al cargar la lista de colaboradores: {ex}")
     
     with st.form("crear_usuario"):
         st.subheader("Registrar Nuevo Colaborador")
-        
-        doc_tipo = st.selectbox("Tipo de Documento", ["DNI", "RUC"])
-        doc_num = st.text_input("Número de Documento (DNI: 8 dígitos / RUC: 11 dígitos)").strip()
-        
         u_nom = st.text_input("Usuario / Nombre").strip()
         u_mail = st.text_input("Gmail Registrado").strip()
         u_pass = st.text_input("Contraseña Asignada", type="password").strip()
         u_rol = st.selectbox("Rol", ["VENDEDOR", "ADMIN"])
         
         if st.form_submit_button("Crear Cuenta de Colaborador"):
-            if doc_tipo == "DNI" and (len(doc_num) != 8 or not doc_num.isdigit()):
-                st.error("❌ El DNI debe contener exactamente 8 dígitos numéricos.")
-            elif doc_tipo == "RUC" and (len(doc_num) != 11 or not doc_num.isdigit()):
-                st.error("❌ El RUC debe contener exactamente 11 dígitos numéricos.")
-            elif not u_nom or not u_mail or not u_pass:
-                st.warning("Completa todos los campos.")
+            if not u_nom or not u_mail or not u_pass:
+                st.warning("Completa todos los campos obligatorios.")
             else:
                 try:
                     supabase.table("usuarios").insert({
                         "username": u_nom,
                         "gmail": u_mail,
                         "password": u_pass,
-                        "rol": u_rol,
-                        "documento_tipo": doc_tipo,
-                        "documento_num": doc_num
+                        "rol": u_rol
                     }).execute()
                     st.success(f"✅ Cuenta creada con éxito para {u_nom}.")
                     st.rerun()
