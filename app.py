@@ -5,6 +5,8 @@ import datetime
 import pandas as pd
 import plotly.express as px
 from supabase import create_client
+from cargarurl import actualizar_url_video_promo, obtener_url_video_promo
+from funciondevideo import guardar_video_supabase
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
