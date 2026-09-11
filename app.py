@@ -124,13 +124,11 @@ if "img_20" not in st.session_state: st.session_state["img_20"] = "caja de 20 l.
 
 # --- BARRA LATERAL CON LOGO, RELOJ Y GEOLOCALIZACIÓN GPS ---
 with st.sidebar:
-    # Logo EMANA Grande en la barra lateral
     try:
         st.image("LOGO agua Emana VECTOR 01.png", width=200)
     except:
         st.title("💧 EMANA App")
     
-    # Componente de Reloj y GPS dinámico en Tiempo Real (Envía ubicación activa a Supabase si hay sesión)
     user_actual = st.session_state["usuario"] if st.session_state["autenticado"] else "INVITADO"
     
     gps_reloj_js = f"""
@@ -269,7 +267,6 @@ with st.sidebar:
 if opcion == "Nuevas Ventas":
     st.header("📝 Registrar Nuevo Pedido")
     
-    # Campo inmodificable para el vendedor regular / Modificable únicamente por el ADMIN
     col_v1, col_v2 = st.columns([2, 2])
     with col_v1:
         if st.session_state["rol"] == "ADMIN":
@@ -281,17 +278,22 @@ if opcion == "Nuevas Ventas":
     with st.container():
         c1, c2 = st.columns(2)
         with c1:
-            cliente_nombre = st.text_input("Nombre Completo / Razón Social *")
+            cliente_nombre = st.text_input("Nombre Completo / Razón Social")
             cliente_doc = st.text_input("DNI / RUC")
-            local_direccion = st.text_input("Dirección del Local *")
             tipo_comprobante = st.selectbox("Comprobante", ["BOLETA", "FACTURA", "NOTA DE PEDIDO"])
         with c2:
             fecha_entrega = st.date_input("Fecha de Entrega", min_value=datetime.date.today())
             rango_entrega = st.selectbox("Rango Horario", ["Mañana (8:00 AM - 12:00 PM)", "Tarde (2:00 PM - 6:00 PM)", "Inmediato"])
 
+    st.subheader("📍 Dirección y Referencia de Entrega")
+    c_dir, c_ref = st.columns(2)
+    with c_dir:
+        local_direccion = st.text_input("Dirección de Entrega")
+    with c_ref:
+        local_referencia = st.text_input("Referencia de Entrega")
+
     st.subheader("📦 Catálogo de Productos")
     
-    # EXCLUSIVO ADMINISTRADOR: Opción de subir, cambiar o quitar imágenes del catálogo
     if st.session_state["rol"] == "ADMIN":
         with st.expander("⚙️ Opciones de Imágenes del Catálogo (Solo Administrador)"):
             st.info("Como Administrador, puedes modificar, subir o quitar las imágenes de los productos desde cualquier dispositivo.")
@@ -310,16 +312,21 @@ if opcion == "Nuevas Ventas":
 
     p1, p2, p3 = st.columns(3)
     
+    # 1. Paquete 625 ml (20 UND)
     with p1:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
         if st.session_state["img_625"] is not None:
             try: st.image(st.session_state["img_625"], use_container_width=True)
-            except: st.markdown("🍾 **Botella 625 ml**")
+            except: st.markdown("🍾 **Paquete 625 ml (20 UND)**")
         else:
-            st.markdown("🍾 **Botella 625 ml** *(Sin imagen)*")
-        cant_625 = st.number_input("Cantidad 625ml", min_value=0, value=0)
+            st.markdown("🍾 **Paquete 625 ml (20 UND)** *(Sin imagen)*")
+        
+        cant_625 = st.number_input("Cantidad Paquetes 625ml", min_value=0, value=0)
+        precio_sug_625 = 10.00 if cant_625 >= 5 else 12.50
+        precio_final_625 = st.number_input("Precio Unitario Paquete 625ml (S/.)", value=precio_sug_625, step=0.50)
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # 2. Botellón 8.5 L
     with p2:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
         if st.session_state["img_85"] is not None:
@@ -327,9 +334,13 @@ if opcion == "Nuevas Ventas":
             except: st.markdown("🪣 **Botella 8.5 L**")
         else:
             st.markdown("🪣 **Botella 8.5 L** *(Sin imagen)*")
-        cant_85 = st.number_input("Cantidad 8.5L", min_value=0, value=0)
+            
+        cant_85 = st.number_input("Cantidad Botellones 8.5L", min_value=0, value=0)
+        precio_sug_85 = 7.00 if cant_85 >= 10 else 9.00
+        precio_final_85 = st.number_input("Precio Unitario Botellón 8.5L (S/.)", value=precio_sug_85, step=0.50)
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # 3. Caja de 20 L
     with p3:
         st.markdown('<div class="product-card">', unsafe_allow_html=True)
         if st.session_state["img_20"] is not None:
@@ -337,44 +348,70 @@ if opcion == "Nuevas Ventas":
             except: st.markdown("📦 **Caja 20 L**")
         else:
             st.markdown("📦 **Caja 20 L** *(Sin imagen)*")
-        cant_20 = st.number_input("Cantidad 20L", min_value=0, value=0)
+            
+        cant_20 = st.number_input("Cantidad Cajas 20L", min_value=0, value=0)
+        precio_sug_20 = 18.00 if cant_20 >= 5 else 20.00  # Ajustable por el usuario
+        precio_final_20 = st.number_input("Precio Unitario Caja 20L (S/.)", value=precio_sug_20, step=0.50)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    total = st.number_input("Monto Total Calculado (S/.) *", min_value=0.0, step=0.5)
+    # Cálculo total automático basándose en precios modificados
+    subtotal_calc = (cant_625 * precio_final_625) + (cant_85 * precio_final_85) + (cant_20 * precio_final_20)
+    total = st.number_input("Monto Total Calculado (S/.)", value=float(subtotal_calc), min_value=0.0, step=0.50)
 
-    st.subheader("📍 Coordenadas de la Entrega")
-    c_lat, c_lng = st.columns(2)
-    with c_lat: latitud = st.number_input("Latitud", value=st.session_state["gps_coords"]["lat"], format="%.6f")
-    with c_lng: longitud = st.number_input("Longitud", value=st.session_state["gps_coords"]["lng"], format="%.6f")
+    st.markdown("---")
+    
+    # Proceso de Guardado con Modal de Confirmación sin obligar llenar todos los campos
+    if st.button("💾 Guardar Pedido", type="primary", use_container_width=True):
+        st.session_state["mostrar_confirmacion"] = True
 
-    if st.button("💾 Confirmar & Guardar Pedido", type="primary", use_container_width=True):
-        if not cliente_nombre or not local_direccion or total <= 0:
-            st.warning("Completa los campos obligatorios (*)")
-        else:
-            nuevo_pedido = {
-                "vendedor": vendedor_activo,
-                "cliente_nombre": cliente_nombre,
-                "cliente_doc": cliente_doc,
-                "local_direccion": local_direccion,
-                "latitud": latitud,
-                "longitud": longitud,
-                "tipo_comprobante": tipo_comprobante,
-                "fecha_entrega": str(fecha_entrega),
-                "rango_entrega": rango_entrega,
-                "total": total,
-                "productos": f"625ml: {cant_625} | 8.5L: {cant_85} | 20L: {cant_20}",
-                "estado": "ACTIVO",
-                "estado_entrega": "PENDIENTE"
-            }
-            supabase.table("pedidos").insert(nuevo_pedido).execute()
-            st.success(f"✅ ¡Pedido guardado con éxito por el vendedor {vendedor_activo}!")
+    if st.session_state.get("mostrar_confirmacion", False):
+        st.warning("❓ **¿Estas seguro de guardar la venta?** Verifica los datos antes de continuar.")
+        col_si, col_no = st.columns(2)
+        
+        with col_si:
+            if st.button("✅ Sí, Guardar Venta", use_container_width=True):
+                nuevo_pedido = {
+                    "vendedor": vendedor_activo,
+                    "cliente_nombre": cliente_nombre if cliente_nombre else "SIN NOMBRE",
+                    "cliente_doc": cliente_doc,
+                    "local_direccion": local_direccion,
+                    "local_referencia": local_referencia,
+                    "tipo_comprobante": tipo_comprobante,
+                    "fecha_entrega": str(fecha_entrega),
+                    "rango_entrega": rango_entrega,
+                    "total": total,
+                    "productos": f"625ml: {cant_625} (S/.{precio_final_625}) | 8.5L: {cant_85} (S/.{precio_final_85}) | 20L: {cant_20} (S/.{precio_final_20})",
+                    "estado": "ACTIVO",
+                    "estado_entrega": "PENDIENTE"
+                }
+                try:
+                    supabase.table("pedidos").insert(nuevo_pedido).execute()
+                    st.success(f"✅ ¡Venta guardada con éxito por {vendedor_activo} en la nube!")
+                    st.session_state["mostrar_confirmacion"] = False
+                except Exception as e:
+                    st.error(f"Error al guardar en la nube: {e}")
 
-# --- MÓDULO 2: CONSULTAR MIS PEDIDOS ---
+        with col_no:
+            if st.button("❌ No, Corregir Datos", use_container_width=True):
+                st.session_state["mostrar_confirmacion"] = False
+                st.info("Puedes corregir los datos del formulario.")
+
+# --- MÓDULO 2: CONSULTAR MIS PEDIDOS & RESPALDO ---
 elif opcion == "Mis Pedidos":
     st.header("📋 Mis Pedidos Registrados")
     res = supabase.table("pedidos").select("*").eq("vendedor", st.session_state["usuario"]).eq("estado", "ACTIVO").execute()
     if res.data:
-        st.dataframe(pd.DataFrame(res.data), use_container_width=True)
+        df_pedidos = pd.DataFrame(res.data)
+        st.dataframe(df_pedidos, use_container_width=True)
+        
+        # Opción de Respaldo para Google Drive
+        csv_data = df_pedidos.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📁 Descargar Respaldo CSV (Para Google Drive)",
+            data=csv_data,
+            file_name=f"respaldo_pedidos_{datetime.date.today()}.csv",
+            mime="text/csv"
+        )
     else:
         st.info("No cuentas con pedidos registrados actualmente.")
 
@@ -387,31 +424,11 @@ elif opcion == "Subir Evidencia":
 
 # --- MÓDULO 4: CONTROL DE RUTAS GOOGLE MAPS EN TIEMPO REAL (ADMIN) ---
 elif opcion == "Rutas GPS" and st.session_state["rol"] == "ADMIN":
-    st.header("🗺️ Control y Guía de Rutas con Google Maps en Tiempo Real (Vista Administrador)")
+    st.header("🗺️ Control y Guía de Rutas (Vista Administrador)")
     res = supabase.table("pedidos").select("*").eq("estado", "ACTIVO").execute()
     
     if res.data:
         df = pd.DataFrame(res.data)
-        st.subheader("📍 Ubicación de Entregas y Rastreo del Personal")
-        
-        # Mapa nativo con marcadores
-        st.map(df[['latitud', 'longitud']].rename(columns={'latitud': 'lat', 'longitud': 'lon'}), zoom=13)
-        
-        # Enlace directo interactivo de Google Maps para guiarlos en tiempo real
-        st.subheader("🧭 Guía de Navegación Directa")
-        pedido_sel = st.selectbox("Selecciona Pedido para Obtener Ruta en Google Maps:", df["cliente_nombre"].tolist())
-        
-        row_ped = df[df["cliente_nombre"] == pedido_sel].iloc[0]
-        google_maps_url = f"https://www.google.com/maps/dir/?api=1&destination={row_ped['latitud']},{row_ped['longitud']}"
-        
-        st.markdown(f'''
-            <a href="{google_maps_url}" target="_blank">
-                <button style="background-color:#0ea5e9; color:white; border:none; padding:12px 24px; border-radius:10px; font-weight:bold; cursor:pointer;">
-                    🗺️ Abrir Ruta en Google Maps Tiempo Real
-                </button>
-            </a>
-        ''', unsafe_allow_html=True)
-        
         st.dataframe(df, use_container_width=True)
 
 # --- MÓDULO 5: ANALÍTICA PREDICTIVA Y GRÁFICOS DASHBOARD ---
