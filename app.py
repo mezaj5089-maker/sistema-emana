@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ESTILOS CSS3 AVANZADOS (AZUL VIBRANTE, GLASSMORPHISM Y BOTÓN WHATSAPP) ---
+# --- ESTILOS CSS3 AVANZADOS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
@@ -24,12 +24,10 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    /* Fondo Azul Claro Armónico */
     .stApp {
         background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 100%);
     }
     
-    /* Header principal con Glassmorphism */
     .header-banner {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         padding: 22px 32px;
@@ -43,7 +41,6 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* Tarjetas de producto interactivas */
     .product-card {
         background: #ffffff;
         border-radius: 18px;
@@ -85,7 +82,6 @@ st.markdown("""
         border: 1px solid #86efac;
     }
 
-    /* Botones Neón */
     .stButton > button {
         border-radius: 12px !important;
         font-weight: 700 !important;
@@ -102,7 +98,6 @@ st.markdown("""
         box-shadow: 0 6px 18px rgba(56, 189, 248, 0.55) !important;
     }
 
-    /* Botón flotante de WhatsApp */
     .btn-whatsapp {
         display: inline-flex;
         align-items: center;
@@ -143,7 +138,6 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
-    /* Estilo del contenedor de video promocional */
     .video-container {
         background: #ffffff;
         border-radius: 18px;
@@ -181,7 +175,6 @@ def guardar_imagen_supabase(file, nombre_destino):
         return None
 
 def guardar_video_supabase(file, nombre_destino):
-    """Sube el video al bucket 'catalogo' en Supabase y devuelve su URL pública."""
     try:
         bytes_data = file.getvalue()
         supabase.storage.from_("catalogo").upload(
@@ -201,7 +194,6 @@ def obtener_productos():
     except Exception:
         productos = []
 
-    # Mapeo de imágenes públicas almacenadas en el bucket 'catalogo'
     img_625 = supabase.storage.from_("catalogo").get_public_url("img_625.png")
     img_85 = supabase.storage.from_("catalogo").get_public_url("img_85.png")
     img_20 = supabase.storage.from_("catalogo").get_public_url("img_20.png")
@@ -213,7 +205,6 @@ def obtener_productos():
             {"id": 3, "nombre": "Caja 20 L", "precio_und": 20.00, "precio_mayor": 18.00, "min_mayor": 5, "imagen": img_20}
         ]
 
-    # Asigna la imagen según corresponda si la base de datos devuelve None
     for p in productos:
         if not p.get("imagen"):
             nombre = p.get("nombre", "").lower()
@@ -227,7 +218,6 @@ def obtener_productos():
     return productos
 
 def mostrar_imagen_producto(url_imagen, alt_text):
-    """Muestra la imagen correctamente sin dejar cajas vacías."""
     if url_imagen and isinstance(url_imagen, str) and url_imagen.strip().startswith("http"):
         st.image(url_imagen, use_container_width=True)
     else:
@@ -265,10 +255,9 @@ if "modo_cliente" not in st.session_state:
 if "promo_video_url" not in st.session_state:
     st.session_state["promo_video_url"] = "https://www.w3schools.com/html/mov_bbb.mp4"
 
-# ENLACE WHATSAPP VINCULADO
 WA_LINK = "https://wa.me/qr/ZEJEN3EUZZQRF1"
 
-# --- BARRA LATERAL CON LOGO, RELOJ, GPS Y WHATSAPP ---
+# --- BARRA LATERAL ---
 with st.sidebar:
     try:
         st.image("LOGO agua Emana VECTOR 01.png", width=200)
@@ -282,7 +271,6 @@ with st.sidebar:
     ''', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # GPS y Reloj en Vivo
     gps_reloj_js = f"""
     <div style="background:#0f172a; color:#f8fafc; padding:14px; border-radius:12px; text-align:center; font-family:sans-serif; border: 2px solid #38bdf8;">
         <div id="fecha" style="font-size:11px; color:#94a3b8; font-weight:600; text-transform:uppercase;"></div>
@@ -319,7 +307,7 @@ with st.sidebar:
             st.session_state["modo_cliente"] = False
             st.rerun()
 
-# --- VISTA CLIENTE (PÚBLICA) ---
+# --- VISTA CLIENTE ---
 if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
     col_head_img, col_head_txt = st.columns([1, 4])
     with col_head_img:
@@ -335,7 +323,6 @@ if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
             </div>
         """, unsafe_allow_html=True)
     
-    # LAYOUT: PRODUCTOS (IZQUIERDA) Y VIDEO PROMOCIONAL (DERECHA)
     col_cat_pub, col_vid_pub = st.columns([2.7, 1.3], gap="medium")
     
     with col_cat_pub:
@@ -372,7 +359,7 @@ if not st.session_state["autenticado"] and st.session_state["modo_cliente"]:
 
     st.stop()
 
-# --- LOGIN Y RECUPERACIÓN ---
+# --- LOGIN ---
 if not st.session_state["autenticado"] and not st.session_state["modo_cliente"]:
     col_logo_login, col_txt_login = st.columns([1, 3])
     with col_logo_login:
@@ -477,7 +464,7 @@ with st.sidebar:
         st.session_state["modo_cliente"] = True
         st.rerun()
 
-# --- MÓDULO 1: REGISTRAR VENTAS Y CATÁLOGO INTERNO + SECCIÓN DE VIDEO ---
+# --- MÓDULO 1: REGISTRAR VENTAS ---
 if opcion == "Nuevas Ventas":
     st.header("📝 Registrar Nuevo Pedido")
     
@@ -506,13 +493,11 @@ if opcion == "Nuevas Ventas":
     with c_ref:
         local_referencia = st.text_input("Referencia de Entrega")
 
-    # LAYOUT DE CATÁLOGO + DERECHA SPOT VIDEO
     col_cat_int, col_vid_int = st.columns([2.7, 1.3], gap="medium")
 
     with col_cat_int:
         st.subheader("📦 Catálogo de Productos Dinámico")
         
-        # ADMINISTRADOR: GESTIONAR CATÁLOGO
         if st.session_state["rol"] == "ADMIN":
             with st.expander("➕ Agregar Nuevo Producto / Gestionar Catálogo (Solo Administrador)"):
                 with st.form("form_nuevo_prod"):
@@ -572,28 +557,21 @@ if opcion == "Nuevas Ventas":
         st.subheader("🎬 Spot Promocional")
         st.markdown('<div class="video-container">', unsafe_allow_html=True)
 
-        # Muestra el video directamente desde la URL pública guardada
         if st.session_state.get("promo_video_url"):
             st.video(st.session_state["promo_video_url"])
         else:
             st.info("No hay ningún video promocional activo.")
 
-        # Módulo de administración exclusivo para Admin
         if st.session_state.get("rol") == "ADMIN":
             st.divider()
             st.caption("⚙️ **Configuración de Video (Solo Admin)**")
 
-            # Opción A: Actualizar mediante enlace (YouTube o MP4 directo)
-            v_input = st.text_input(
-                "Enlace (YouTube / URL MP4)",
-                value=st.session_state.get("promo_video_url", "")
-            )
+            v_input = st.text_input("Enlace (YouTube / URL MP4)", value=st.session_state.get("promo_video_url", ""))
             if st.button("Actualizar Enlace"):
                 st.session_state["promo_video_url"] = v_input
                 st.success("✅ Enlace actualizado correctamente.")
                 st.rerun()
 
-            # Opción B: Subir desde la PC directamente a Supabase
             v_file = st.file_uploader("O subir video desde la PC (MP4 / MOV)", type=["mp4", "mov"])
             if v_file is not None:
                 if st.button("🚀 Subir Video a Supabase"):
@@ -645,7 +623,7 @@ if opcion == "Nuevas Ventas":
             if st.button("❌ No, Corregir Datos", use_container_width=True):
                 st.session_state["mostrar_confirmacion"] = False
 
-# --- MÓDULO 2: MIS PEDIDOS (ACTUALIZADO CON FORMATOS DE DESCARGA MULTIPLE) ---
+# --- MÓDULO 2: MIS PEDIDOS (CORREGIDO + ACTUALIZACIÓN EN SUPABASE) ---
 elif opcion == "Mis Pedidos":
     st.header("📋 Mis Pedidos Registrados")
     
@@ -658,6 +636,46 @@ elif opcion == "Mis Pedidos":
         df_pedidos = pd.DataFrame(res.data)
         st.dataframe(df_pedidos, use_container_width=True)
         
+        # --- SECCIÓN DE ACTUALIZACIÓN EN SUPABASE ---
+        st.markdown("---")
+        st.subheader("⚡ Actualizar Estado de Pedidos en Supabase")
+        
+        with st.expander("📝 Modificar Estado o Cambiar Pedido"):
+            # Obtenemos la lista de IDs o Nombres de Clientes
+            opciones_pedidos = {f"ID: {p['id']} - {p['cliente_nombre']} ({p['productos']})": p['id'] for p in res.data}
+            pedido_sel_key = st.selectbox("Selecciona un Pedido:", list(opciones_pedidos.keys()))
+            pedido_id = opciones_pedidos[pedido_sel_key]
+            
+            # Buscar los datos actuales del pedido seleccionado
+            pedido_actual = next((item for item in res.data if item["id"] == pedido_id), None)
+            
+            if pedido_actual:
+                c_act1, c_act2, c_act3 = st.columns(3)
+                with c_act1:
+                    nuevo_est_entrega = st.selectbox(
+                        "Estado de Entrega:", 
+                        ["PENDIENTE", "EN CAMINO", "ENTREGADO", "CANCELADO"],
+                        index=["PENDIENTE", "EN CAMINO", "ENTREGADO", "CANCELADO"].index(pedido_actual.get("estado_entrega", "PENDIENTE")) if pedido_actual.get("estado_entrega") in ["PENDIENTE", "EN CAMINO", "ENTREGADO", "CANCELADO"] else 0
+                    )
+                with c_act2:
+                    nuevo_monto_total = st.number_input("Monto Total (S/.)", value=float(pedido_actual.get("total", 0.0)))
+                with c_act3:
+                    nuevo_estado = st.selectbox("Estado Registro:", ["ACTIVO", "INACTIVO"], index=0 if pedido_actual.get("estado") == "ACTIVO" else 1)
+                
+                if st.button("🔄 Actualizar en Supabase", type="primary", use_container_width=True):
+                    try:
+                        supabase.table("pedidos").update({
+                            "estado_entrega": nuevo_est_entrega,
+                            "total": nuevo_monto_total,
+                            "estado": nuevo_estado
+                        }).eq("id", pedido_id).execute()
+                        st.success(f"✅ Pedido #{pedido_id} actualizado exitosamente en Supabase.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error al actualizar en Supabase: {e}")
+
+        # --- SECCIÓN EXPORTAR FORMATOS SIN ERROR ---
+        st.markdown("---")
         st.subheader("📥 Exportar Pedidos en Diferentes Formatos")
         col_desc1, col_desc2, col_desc3 = st.columns(3)
 
@@ -672,18 +690,14 @@ elif opcion == "Mis Pedidos":
                 use_container_width=True
             )
 
-        # 2. Exportar a Excel (.xlsx)
-        buffer_excel = io.BytesIO()
-        with pd.ExcelWriter(buffer_excel, engine='openpyxl') as writer:
-            df_pedidos.to_excel(writer, index=False, sheet_name='Pedidos')
-        excel_data = buffer_excel.getvalue()
-
+        # 2. Exportar a Excel (Formato compatible directo sin openpyxl)
+        tsv_data = df_pedidos.to_csv(index=False, sep='\t').encode('utf-8')
         with col_desc2:
             st.download_button(
-                label="📊 Descargar Excel (.xlsx)",
-                data=excel_data,
-                file_name=f"pedidos_emana_{datetime.date.today()}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                label="📊 Descargar Excel (.xls)",
+                data=tsv_data,
+                file_name=f"pedidos_emana_{datetime.date.today()}.xls",
+                mime="application/vnd.ms-excel",
                 use_container_width=True
             )
 
