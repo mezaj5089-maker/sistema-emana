@@ -754,11 +754,16 @@ elif opcion == "Personal (8 Cuentas)" and st.session_state["rol"] == "ADMIN":
                     st.success(f"✅ Cuenta creada con éxito para {u_nom}.")
                     st.rerun()
                 except Exception as ex:
-                    st.error(f"Error al registrar usuario: {ex}")
+                    st.error(f"Error al crear la cuenta: {ex}")
 
 # --- MÓDULO 7: PAPELERA ---
 elif opcion == "Papelera" and st.session_state["rol"] == "ADMIN":
-    st.header("🗑️ Registro de Eliminados")
-    res_p = supabase.table("pedidos").select("*").eq("estado", "PAPELERA").execute()
-    if res_p.data:
-        st.dataframe(pd.DataFrame(res_p.data), use_container_width=True)
+    st.header("🗑️ Papelera de Reciclaje (Pedidos Eliminados)")
+    try:
+        res_p = supabase.table("pedidos").select("*").eq("estado", "INACTIVO").execute()
+        if res_p.data:
+            st.dataframe(pd.DataFrame(res_p.data), use_container_width=True)
+        else:
+            st.info("La papelera de reciclaje está vacía.")
+    except Exception as ex:
+        st.error(f"Error al consultar la papelera: {ex}")
