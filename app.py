@@ -5,6 +5,7 @@ import datetime
 import pandas as pd
 import plotly.express as px
 from supabase import create_client
+import io
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
@@ -644,7 +645,7 @@ if opcion == "Nuevas Ventas":
             if st.button("❌ No, Corregir Datos", use_container_width=True):
                 st.session_state["mostrar_confirmacion"] = False
 
-# --- MÓDULO 2: MIS PEDIDOS ---
+# --- MÓDULO 2: MIS PEDIDOS (ACTUALIZADO CON FORMATOS DE DESCARGA MULTIPLE) ---
 elif opcion == "Mis Pedidos":
     st.header("📋 Mis Pedidos Registrados")
     
@@ -657,13 +658,45 @@ elif opcion == "Mis Pedidos":
         df_pedidos = pd.DataFrame(res.data)
         st.dataframe(df_pedidos, use_container_width=True)
         
+        st.subheader("📥 Exportar Pedidos en Diferentes Formatos")
+        col_desc1, col_desc2, col_desc3 = st.columns(3)
+
+        # 1. Exportar a CSV
         csv_data = df_pedidos.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📁 Descargar Respaldo CSV",
-            data=csv_data,
-            file_name=f"respaldo_pedidos_{datetime.date.today()}.csv",
-            mime="text/csv"
-        )
+        with col_desc1:
+            st.download_button(
+                label="📄 Descargar CSV",
+                data=csv_data,
+                file_name=f"pedidos_emana_{datetime.date.today()}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+        # 2. Exportar a Excel (.xlsx)
+        buffer_excel = io.BytesIO()
+        with pd.ExcelWriter(buffer_excel, engine='openpyxl') as writer:
+            df_pedidos.to_excel(writer, index=False, sheet_name='Pedidos')
+        excel_data = buffer_excel.getvalue()
+
+        with col_desc2:
+            st.download_button(
+                label="📊 Descargar Excel (.xlsx)",
+                data=excel_data,
+                file_name=f"pedidos_emana_{datetime.date.today()}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+        # 3. Exportar a JSON
+        json_data = df_pedidos.to_json(orient="records", indent=4).encode('utf-8')
+        with col_desc3:
+            st.download_button(
+                label="🌐 Descargar JSON",
+                data=json_data,
+                file_name=f"pedidos_emana_{datetime.date.today()}.json",
+                mime="application/json",
+                use_container_width=True
+            )
     else:
         st.info("No cuentan con pedidos registrados actualmente.")
 
