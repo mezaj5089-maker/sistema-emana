@@ -4,3 +4,4 @@ pillow
 supabase
 streamlit-option-menu
 plotly
+openpyxl
